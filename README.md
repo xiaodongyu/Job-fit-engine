@@ -2,11 +2,34 @@
 
 AI-powered resume analyzer with **strict evidence grounding** using Gemini API + local FAISS RAG.
 
+## Prerequisites
+
+- **Python 3.11+**
+- **Node.js 18+** and npm
+- **Gemini API Key** - Get one from [Google AI Studio](https://aistudio.google.com/apikey)
+
+## TL;DR - Run the App
+
+```powershell
+# Terminal 1: Backend
+cd backend
+pip install -r requirements.txt
+Copy-Item env.template .env   # Then edit .env with your GEMINI_API_KEY
+uvicorn main:app --reload --port 8000
+
+# Terminal 2: Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:3000 in your browser.
+
 ## Architecture
 
 ```
 ├── backend/               # FastAPI Python backend
-│   ├── main.py            # API routes (6 endpoints)
+│   ├── main.py            # API routes (7 endpoints)
 │   ├── models.py          # Pydantic schemas
 │   ├── prompts.py         # LLM prompts + JSON schemas
 │   ├── gemini_client.py   # Gemini embed + generate
@@ -16,9 +39,16 @@ AI-powered resume analyzer with **strict evidence grounding** using Gemini API +
 │   └── data/              # Runtime: FAISS indices + metadata
 ├── frontend/              # Vite + React TypeScript
 │   ├── src/
-│   │   ├── App.tsx        # 3-page flow with status polling
+│   │   ├── App.tsx        # Main shell with step routing
 │   │   ├── api.ts         # API client
-│   │   └── styles.css     # Dark theme UI
+│   │   ├── types.ts       # TypeScript types & constants
+│   │   ├── useCareerFit.ts # Custom hook (state + handlers)
+│   │   ├── styles.css     # Dark theme UI
+│   │   └── steps/         # Step page components
+│   │       ├── StickerBoard.tsx
+│   │       ├── RoleSelector.tsx
+│   │       ├── AnalysisResults.tsx
+│   │       └── ClusterView.tsx
 │   └── package.json
 ```
 
@@ -162,6 +192,29 @@ curl -X POST http://localhost:8000/resume/generate \
   }'
 ```
 
+### Cluster Experience (Placeholder)
+```bash
+curl -X POST http://localhost:8000/experience/cluster \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "abc123",
+    "items": [
+      { "id": "1", "label": "work", "text": "3 years at TechCorp building APIs", "source": "sticker" },
+      { "id": "2", "label": "skill", "text": "Python, FastAPI, PostgreSQL", "source": "sticker" },
+      { "id": "3", "label": "project", "text": "Built ML pipeline for recommendations", "source": "sticker" }
+    ],
+    "resume_text": "Optional pasted resume text here..."
+  }'
+# Returns: { "session_id": "...", "clusters": [...], "total_items": N }
+```
+
+Data sources for clustering:
+- `items`: Stickers from the frontend
+- `resume_text`: Optional pasted resume text
+- `session_id`: If provided, also retrieves uploaded resume chunks from the session
+
+> **Note:** This is a placeholder endpoint. Currently returns all items in a single cluster. TODO: Implement actual clustering algorithm.
+
 ## Grounding Rules
 
 ### Resume Claims
@@ -206,3 +259,5 @@ data/
 2. **Select Target Role** → Choose DS/MLE/SWE/OTHER + JD source
 3. **View Analysis** → Role fit scores + requirements + gap analysis + evidence
 4. **Generate Resume** → Grounded bullets + "Need Info" checklist
+
+**Optional:** Use "View Clusters" to see your experiences grouped (placeholder - actual clustering algorithm TBD)

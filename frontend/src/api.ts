@@ -215,3 +215,43 @@ export async function exportDocx(
   if (!res.ok) throw new Error(await res.text());
   return res.blob();
 }
+
+// === Clustering Types ===
+export interface ExperienceItem {
+  id: string;
+  label: string;
+  text: string;
+  source: string;
+}
+
+export interface ClusteredGroup {
+  cluster_id: string;
+  cluster_label: string;
+  items: ExperienceItem[];
+  summary: string;
+}
+
+export interface ClusterResponse {
+  session_id: string;
+  clusters: ClusteredGroup[];
+  total_items: number;
+}
+
+// Cluster experience items
+export async function clusterExperience(
+  items: ExperienceItem[],
+  resumeText?: string,
+  sessionId?: string
+): Promise<ClusterResponse> {
+  const res = await fetch(`${API_BASE}/experience/cluster`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      session_id: sessionId,
+      items,
+      resume_text: resumeText
+    })
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}

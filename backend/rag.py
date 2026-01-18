@@ -446,6 +446,20 @@ def session_is_ready(session_id: str) -> bool:
     return index_path.exists()
 
 
+def get_all_resume_chunks(session_id: str) -> list[dict]:
+    """
+    Retrieve all resume chunks for a session (without search/query).
+    Returns list of {chunk_id, text, source_type, session_id, chunk_index}.
+    """
+    session_dir = get_session_dir(session_id)
+    meta_path = session_dir / "resume_meta.json"
+    
+    if not meta_path.exists():
+        return []
+    
+    return load_metadata(meta_path)
+
+
 # === Temporary JD processing (for user-pasted JD) ===
 def search_temp_jd(jd_text: str, query: str, top_k: int = None) -> list[EvidenceChunk]:
     """

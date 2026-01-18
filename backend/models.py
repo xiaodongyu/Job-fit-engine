@@ -134,3 +134,34 @@ class ResumeGenerateResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     message: str
+
+
+# === Experience Clustering ===
+class ExperienceItem(BaseModel):
+    """A single experience item (sticker, text snippet, etc.)"""
+    id: str
+    label: str  # e.g., 'work', 'project', 'skill', 'education', etc.
+    text: str
+    source: str = "sticker"  # 'sticker', 'pasted_text', 'resume_chunk'
+
+
+class ClusterRequest(BaseModel):
+    """Request to cluster user's experience items."""
+    session_id: Optional[str] = None
+    items: list[ExperienceItem]
+    resume_text: Optional[str] = None  # Optional pasted resume text
+
+
+class ClusteredGroup(BaseModel):
+    """A cluster of related experience items."""
+    cluster_id: str
+    cluster_label: str  # e.g., 'Technical Skills', 'Work Experience', etc.
+    items: list[ExperienceItem]
+    summary: str = ""  # Optional summary of the cluster
+
+
+class ClusterResponse(BaseModel):
+    """Response containing clustered experience items."""
+    session_id: str
+    clusters: list[ClusteredGroup]
+    total_items: int

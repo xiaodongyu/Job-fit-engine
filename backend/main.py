@@ -12,7 +12,8 @@ from models import (
     AnalyzeFitRequest, AnalyzeFitResponse,
     RoleRecommendation, Requirements, GapAnalysis, Evidence,
     ResumeGenerateRequest, ResumeGenerateResponse, ResumeStructured,
-    HealthResponse, UploadStatus
+    HealthResponse, UploadStatus,
+    ClusterRequest, ClusterResponse, ClusteredGroup, ExperienceItem
 )
 from prompts import (
     ROLE_FIT_SYSTEM, ROLE_FIT_SCHEMA,
@@ -363,6 +364,64 @@ async def resume_export_docx(request: ResumeGenerateRequest):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# CLUSTERING ENDPOINTS (PLACEHOLDER)
+# =============================================================================
+
+@app.post("/experience/cluster", response_model=ClusterResponse)
+async def cluster_experience(request: ClusterRequest):
+    """
+    Cluster user's experience items (stickers, texts, resume chunks).
+    
+    Data sources:
+    1. items: Stickers and other experience items from frontend
+    2. resume_text: Optional pasted resume text
+    3. session_id: If provided and valid, retrieves uploaded resume chunks from session
+    
+    PLACEHOLDER IMPLEMENTATION: Returns all items in a single cluster.
+    TODO: Implement actual clustering algorithm (e.g., k-means, hierarchical, etc.)
+    """
+    session_id = request.session_id or uuid.uuid4().hex[:8]
+    
+    # Collect all items
+    all_items: list[ExperienceItem] = list(request.items)
+    
+    # If resume_text is provided (pasted text), add it as a single item
+    if request.resume_text and request.resume_text.strip():
+        all_items.append(ExperienceItem(
+            id=f"pasted_{uuid.uuid4().hex[:6]}",
+            label="resume",
+            text=request.resume_text.strip(),
+            source="pasted_text"
+        ))
+    
+    # If session_id is provided and has uploaded resume data, retrieve those chunks
+    if request.session_id and rag.session_is_ready(request.session_id):
+        resume_chunks = rag.get_all_resume_chunks(request.session_id)
+        for chunk in resume_chunks:
+            all_items.append(ExperienceItem(
+                id=chunk.get("chunk_id", f"chunk_{uuid.uuid4().hex[:6]}"),
+                label="resume",
+                text=chunk.get("text", ""),
+                source="uploaded_resume"
+            ))
+    
+    # PLACEHOLDER: Put all items into one cluster
+    # TODO: Replace with actual clustering algorithm
+    single_cluster = ClusteredGroup(
+        cluster_id="cluster_0",
+        cluster_label="All Experiences",
+        items=all_items,
+        summary="All user experiences grouped together (placeholder - no clustering applied)"
+    )
+    
+    return ClusterResponse(
+        session_id=session_id,
+        clusters=[single_cluster],
+        total_items=len(all_items)
+    )
 
 
 if __name__ == "__main__":
