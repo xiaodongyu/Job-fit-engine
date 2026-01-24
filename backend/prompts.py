@@ -160,3 +160,189 @@ Rules:
 - If JD requires something not in evidence, add to need_info
 
 Return JSON with: education[], experience[], skills[], need_info[]"""
+
+
+# === Extraction (1b) ===
+EXTRACT_SYSTEM = """You extract skills and experiences from resume text.
+
+CRITICAL GROUNDING RULES:
+1. Each chunk has a chunk_id. You MUST cite chunk_ids for every skill and experience.
+2. ONLY extract from the provided chunks. Do NOT fabricate.
+3. Skills: concrete technical or domain skills (e.g. Python, AWS, statistics).
+4. Experiences: work or project bullets; keep concise, one per entry.
+
+Return structured JSON with skills[] and experiences[]."""
+
+EXTRACT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "skills": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "chunk_ids": {"type": "array", "items": {"type": "string"}}
+                },
+                "required": ["name", "chunk_ids"]
+            }
+        },
+        "experiences": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string"},
+                    "chunk_ids": {"type": "array", "items": {"type": "string"}}
+                },
+                "required": ["text", "chunk_ids"]
+            }
+        }
+    },
+    "required": ["skills", "experiences"]
+}
+
+
+def build_extract_prompt(chunks: list[dict]) -> str:
+    """Build user prompt for extraction. chunks: [{chunk_id, text}]."""
+    parts = []
+    for c in chunks:
+        parts.append(f"[{c['chunk_id']}]\n{c['text']}")
+    return "=== RESUME CHUNKS ===\n\n" + "\n\n".join(parts) + "\n\nExtract skills and experiences. Cite chunk_ids for each."
+
+
+# === Clustering (2) ===
+CLUSTER_LABELS = {
+    "MLE": "Machine Learning Engineer",
+    "DS": "Data Scientist",
+    "SWE": "Software Engineer",
+    "QR": "Quantitative Researcher",
+    "QD": "Quantitative Developer",
+}
+
+CLUSTER_SYSTEM = """You classify resume skills and experiences into predefined role clusters.
+
+CLUSTERS (assign one or more per item): MLE, DS, SWE, QR, QD.
+
+- MLE: ML engineering, model deployment, MLOps, PyTorch/TensorFlow, etc.
+- DS: data science, analytics, A/B testing, statistics, pandas, etc.
+- SWE: software engineering, APIs, systems, backend/frontend, etc.
+- QR: quantitative research, strategies, risk, signals, etc.
+- QD: quant development, low-latency, C++/Python for trading, etc.
+
+TIERS (per role, for role-fit scoring):
+- Tier-1: core defining responsibility (weight 1.0). E.g. MLE: model deployment, training pipelines, drift monitoring.
+- Tier-2: strong adjacent responsibility (weight 0.6). E.g. MLE: PyTorch, Airflow, feature engineering.
+- Tier-3: weak/contextual signal (weight 0.3). E.g. MLE: "used ML models" without deployment context.
+
+OWNERSHIP (one per evidence unit):
+- primary: main role responsibility (1.0)
+- parallel: secondary responsibility (0.8)
+- earlier_career: earlier job (0.7)
+- add_on: supplemental artifact (0.6)
+- coursework: learning only (0.4)
+
+For each skill or experience: assign role_tiers (role + tier 1|2|3 for each applicable cluster), ownership, and chunk_ids.
+Also provide clusters (list of role ids) for backward compatibility. Cite chunk_ids as evidence.
+Return structured JSON."""
+
+CLUSTER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "assignments": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "item_type": {"type": "string", "enum": ["skill", "experience"]},
+                    "item_value": {"type": "string"},
+                    "clusters": {"type": "array", "items": {"type": "string", "enum": ["MLE", "DS", "SWE", "QR", "QD"]}},
+                    "role_tiers": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "role": {"type": "string", "enum": ["MLE", "DS", "SWE", "QR", "QD"]},
+                                "tier": {"type": "string", "enum": ["1", "2", "3"]}
+                            },
+                            "required": ["role", "tier"]
+                        }
+                    },
+                    "ownership": {
+                        "type": "string",
+                        "enum": ["primary", "parallel", "earlier_career", "add_on", "coursework"]
+                    },
+                    "chunk_ids": {"type": "array", "items": {"type": "string"}}
+                },
+                "required": ["item_type", "item_value", "clusters", "chunk_ids"]
+            }
+        }
+    },
+    "required": ["assignments"]
+}
+
+
+def build_cluster_prompt(extraction: dict, chunk_map: dict[str, str]) -> str:
+    """Build user prompt for clustering. chunk_map: chunk_id -> text."""
+    lines = ["=== SKILLS ==="]
+    for s in extraction.get("skills", []):
+        lines.append(f"- {s.get('name', '')} (chunk_ids: {s.get('chunk_ids', [])})")
+    lines.append("\n=== EXPERIENCES ===")
+    for e in extraction.get("experiences", []):
+        lines.append(f"- {e.get('text', '')[:200]}... (chunk_ids: {e.get('chunk_ids', [])})")
+    lines.append("\n=== CHUNK REFERENCE ===")
+    for cid, text in list(chunk_map.items())[:50]:
+        lines.append(f"[{cid}] {text[:150]}...")
+    return "\n".join(lines) + "\n\nAssign each skill/experience to one or more clusters. For each, provide role_tiers (role + tier 1|2|3) and ownership to improve role-fit scoring. Return JSON with assignments[]."
+
+
+# === Match by Cluster (3) ===
+MATCH_BY_CLUSTER_SYSTEM = """You assess how well a candidate's resume matches a job description, per role cluster.
+
+For each cluster (MLE, DS, SWE, QR, QD) present in the resume:
+1. Compute match_pct (0.0–1.0) between resume evidence for that cluster and JD requirements.
+2. Cite specific resume_chunks and jd_chunks as evidence.
+
+CRITICAL: Only use provided chunks. Do NOT invent. match_pct must reflect actual overlap."""
+
+MATCH_BY_CLUSTER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "cluster_matches": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "cluster": {"type": "string"},
+                    "match_pct": {"type": "number"},
+                    "resume_chunk_ids": {"type": "array", "items": {"type": "string"}},
+                    "jd_chunk_ids": {"type": "array", "items": {"type": "string"}}
+                },
+                "required": ["cluster", "match_pct", "resume_chunk_ids", "jd_chunk_ids"]
+            }
+        },
+        "overall_match_pct": {"type": "number"}
+    },
+    "required": ["cluster_matches"]
+}
+
+
+def build_match_by_cluster_prompt(
+    clusters: list[dict],
+    resume_chunks: list,
+    jd_chunks: list,
+) -> str:
+    """Build user prompt for match-by-cluster. clusters have cluster_id, items, evidence."""
+    r_text = "\n\n".join([f"[{c.chunk_id}] {c.text}" for c in resume_chunks])
+    j_text = "\n\n".join([f"[{c.chunk_id}] {c.text}" for c in jd_chunks])
+    cl = "\n".join([f"- {g['cluster_id']}: {g.get('cluster_label', '')} ({len(g.get('items', []))} items)" for g in clusters])
+    return f"""=== RESUME CLUSTERS ===
+{cl}
+
+=== RESUME EVIDENCE (chunk_id -> text) ===
+{r_text}
+
+=== JD EVIDENCE ===
+{j_text}
+
+For each cluster above, compute match_pct vs JD and list resume_chunk_ids + jd_chunk_ids as evidence. Return JSON with cluster_matches and overall_match_pct."""

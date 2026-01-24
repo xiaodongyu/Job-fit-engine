@@ -12,6 +12,15 @@ class RoleType(str, Enum):
     OTHER = "OTHER"
 
 
+class ClusterType(str, Enum):
+    """Predefined role clusters for skills/experience classification."""
+    MLE = "MLE"   # Machine Learning Engineer
+    DS = "DS"     # Data Scientist
+    SWE = "SWE"   # Software Engineer
+    QR = "QR"     # Quantitative Researcher
+    QD = "QD"     # Quantitative Developer
+
+
 class LevelType(str, Enum):
     ENTRY = "entry"
     JUNIOR = "junior"
@@ -51,6 +60,11 @@ class JDIngestResponse(BaseModel):
 class ResumeUploadTextRequest(BaseModel):
     text: str
     session_id: Optional[str] = None
+
+
+class AddMaterialsRequest(BaseModel):
+    session_id: str
+    text: str
 
 
 class ResumeUploadResponse(BaseModel):
@@ -136,28 +150,45 @@ class HealthResponse(BaseModel):
     message: str
 
 
+# === Extraction (1b) ===
+class ExtractedSkill(BaseModel):
+    name: str
+    chunk_ids: list[str] = []
+
+
+class ExtractedExperience(BaseModel):
+    text: str
+    chunk_ids: list[str] = []
+
+
+class ExtractionResult(BaseModel):
+    skills: list[ExtractedSkill] = []
+    experiences: list[ExtractedExperience] = []
+
+
 # === Experience Clustering ===
 class ExperienceItem(BaseModel):
-    """A single experience item (sticker, text snippet, etc.)"""
+    """A single experience item (sticker, text snippet, skill, experience, etc.)"""
     id: str
-    label: str  # e.g., 'work', 'project', 'skill', 'education', etc.
+    label: str  # e.g., 'work', 'project', 'skill', 'experience', 'education'
     text: str
-    source: str = "sticker"  # 'sticker', 'pasted_text', 'resume_chunk'
+    source: str = "sticker"  # 'sticker', 'pasted_text', 'uploaded_resume', 'extraction'
 
 
 class ClusterRequest(BaseModel):
     """Request to cluster user's experience items."""
     session_id: Optional[str] = None
-    items: list[ExperienceItem]
+    items: list[ExperienceItem] = []
     resume_text: Optional[str] = None  # Optional pasted resume text
 
 
 class ClusteredGroup(BaseModel):
-    """A cluster of related experience items."""
+    """A cluster of related experience items (MLE/DS/SWE/QR/QD) with evidence."""
     cluster_id: str
-    cluster_label: str  # e.g., 'Technical Skills', 'Work Experience', etc.
+    cluster_label: str
     items: list[ExperienceItem]
-    summary: str = ""  # Optional summary of the cluster
+    summary: str = ""
+    evidence: list[EvidenceChunk] = []  # Chunks supporting this cluster
 
 
 class ClusterResponse(BaseModel):
@@ -165,3 +196,27 @@ class ClusterResponse(BaseModel):
     session_id: str
     clusters: list[ClusteredGroup]
     total_items: int
+    role_fit_distribution: Optional[dict[str, float]] = None
+
+
+# === Match by Cluster (3) ===
+class MatchByClusterRequest(BaseModel):
+    """Request for per-cluster JD match."""
+    session_id: str
+    use_curated_jd: bool = False
+    jd_text: Optional[str] = None
+    debug: bool = False
+
+
+class ClusterMatch(BaseModel):
+    """Match result for one cluster."""
+    cluster: str
+    match_pct: float = Field(ge=0, le=1)
+    evidence: Evidence
+
+
+class MatchByClusterResponse(BaseModel):
+    """Per-cluster match percentages and evidence."""
+    cluster_matches: list[ClusterMatch]
+    overall_match_pct: Optional[float] = None
+    debug: Optional[dict] = None

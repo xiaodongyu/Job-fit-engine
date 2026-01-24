@@ -1,0 +1,34 @@
+NAME: Michael Roberts
+LOCATION: Austin, TX
+
+PRIMARY ROLE TARGET: Software Engineer (SWE)
+
+GROUND-TRUTH ROLE FIT
+- SWE: 50%
+- MLE: 20%
+- QD: 15%
+- DS: 10%
+- QR: 5%
+
+SUMMARY
+Senior Software Engineer with experience across distributed systems, quantitative
+infrastructure, and ML-enabled services. Strong emphasis on performance, reliability,
+and scalable architectures.
+
+CORE SKILLS
+Python, C++, Distributed Systems, APIs, Databases,
+Performance Optimization, ML Integration
+
+EXPERIENCE
+
+Senior Software Engineer — Infrastructure Co. | 2018–Present
+- Designed high-throughput backend systems supporting real-time analytics.
+- Integrated ML inference services into production platforms.
+- Optimized latency-critical components in Python and C++.
+
+Quantitative Systems Engineer — Trading Firm | 2016–2018
+- Built research and backtesting infrastructure for quantitative analysts.
+- Supported model deployment into low-latency environments.
+
+EDUCATION
+B.S. Computer Engineering

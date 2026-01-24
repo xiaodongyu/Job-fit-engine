@@ -1,0 +1,9 @@
+ADDITIONAL MATERIAL – SYSTEM DESIGN WRITEUP
+Candidate: Michael Roberts
+
+System: Real-Time Analytics Platform
+
+- Designed ingestion layer handling 500K events/sec.
+- Implemented fault-tolerant message processing with backpressure handling.
+- Integrated ML inference service into request path with strict latency SLAs.
+- Authored internal design docs and led architecture reviews.

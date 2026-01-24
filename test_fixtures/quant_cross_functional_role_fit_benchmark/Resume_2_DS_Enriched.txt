@@ -1,0 +1,37 @@
+NAME: Priya Natarajan
+LOCATION: San Jose, CA
+
+PRIMARY ROLE TARGET: Data Scientist (DS)
+
+GROUND-TRUTH ROLE FIT
+- DS: 50%
+- MLE: 20%
+- SWE: 15%
+- QR: 10%
+- QD: 5%
+
+SUMMARY
+Data Scientist with strong foundations in statistics, experimentation, and applied machine
+learning. Experienced in translating business problems into analytical frameworks and
+actionable insights.
+
+CORE SKILLS
+Statistics, Python, SQL, Causal Inference, Experiment Design,
+Machine Learning, Data Visualization
+
+EXPERIENCE
+
+Senior Data Scientist — Consumer Tech Co. | 2019–Present
+- Led statistical modeling and experimentation for pricing and retention initiatives.
+- Designed causal inference frameworks to evaluate policy and feature changes.
+- Collaborated with engineering to productionize high-impact models.
+
+Machine Learning Analyst — Consumer Tech Co. | 2017–2019
+- Built predictive models for user segmentation and LTV forecasting.
+- Supported ML engineers with feature analysis and validation.
+
+Analytics Engineer — Analytics Firm | 2015–2017
+- Developed SQL pipelines and dashboards for executive reporting.
+
+EDUCATION
+Ph.D. Statistics

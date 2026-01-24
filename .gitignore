@@ -248,6 +248,10 @@ desktop.ini
 *.log
 npm-debug.log*
 
+# Test fixtures (avoid committing resumes, JDs, materials)
+test_fixtures/*.pdf
+test_fixtures/*.txt
+
 # === Misc ===
 *.bak
 *.tmp

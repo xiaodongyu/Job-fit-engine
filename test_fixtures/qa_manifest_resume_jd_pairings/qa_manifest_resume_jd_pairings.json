@@ -1,0 +1,318 @@
+{
+  "manifest_version": "1.0",
+  "generated_date": "2026-01-24",
+  "purpose": "Product QA: Expected best-fit JD pairings for each resume with target match scores.",
+  "artifacts": {
+    "resume_bundle_zip": "quant_cross_functional_role_fit_benchmark.zip",
+    "jd_bundle_zip": "senior_us_mixed_jds_pdf_bundle.zip"
+  },
+  "scoring_model": "overall_match = 1 - L1_distance(cluster_vectors)/2; per_cluster_match = min(resume, jd)/jd for jd>0",
+  "clusters": [
+    "MLE",
+    "DS",
+    "SWE",
+    "QR",
+    "QD"
+  ],
+  "tolerances": {
+    "overall_match_abs_error": 0.08,
+    "per_cluster_match_abs_error": 0.12
+  },
+  "cases": [
+    {
+      "resume_id": "R1_MLE_Enriched",
+      "resume_file": "Resume_1_MLE_Enriched.txt",
+      "resume_cluster_fit_ground_truth": {
+        "MLE": 0.55,
+        "SWE": 0.25,
+        "DS": 0.15,
+        "QD": 0.05,
+        "QR": 0.0
+      },
+      "notes": "Production ML pipeline + MLOps signals; secondary SWE platform.",
+      "expected_best_fit_jds": [
+        {
+          "jd_id": "JD_MLE_01_Amazon_TrainingInfra",
+          "jd_pdf": "JD_MLE_01_Amazon_TrainingInfra.pdf",
+          "company": "Amazon",
+          "role": "MLE",
+          "expected_overall_match": 0.85,
+          "expected_cluster_matches": {
+            "MLE": 0.786,
+            "DS": 1.0,
+            "SWE": 1.0,
+            "QR": null,
+            "QD": null
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_MLE_02_Amazon_GenAIIC",
+          "jd_pdf": "JD_MLE_02_Amazon_GenAIIC.pdf",
+          "company": "Amazon (AWS)",
+          "role": "MLE",
+          "expected_overall_match": 0.8,
+          "expected_cluster_matches": {
+            "MLE": 0.733,
+            "DS": 1.0,
+            "SWE": 1.0,
+            "QR": null,
+            "QD": null
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_SWE_02_Amazon_Neuron_DistributedTraining",
+          "jd_pdf": "JD_SWE_02_Amazon_Neuron_DistributedTraining.pdf",
+          "company": "Amazon (AWS Neuron)",
+          "role": "SWE",
+          "expected_overall_match": 0.55,
+          "expected_cluster_matches": {
+            "MLE": 1.0,
+            "DS": 1.0,
+            "SWE": 0.357,
+            "QR": null,
+            "QD": 1.0
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        }
+      ]
+    },
+    {
+      "resume_id": "R2_DS_Enriched",
+      "resume_file": "Resume_2_DS_Enriched.txt",
+      "resume_cluster_fit_ground_truth": {
+        "DS": 0.5,
+        "MLE": 0.2,
+        "SWE": 0.15,
+        "QR": 0.1,
+        "QD": 0.05
+      },
+      "notes": "Statistics/experimentation heavy DS; secondary MLE + SWE; small QR.",
+      "expected_best_fit_jds": [
+        {
+          "jd_id": "JD_DS_02_Microsoft_SeniorDataScientist_MediaOptimization",
+          "jd_pdf": "JD_DS_02_Microsoft_SeniorDataScientist_MediaOptimization.pdf",
+          "company": "Microsoft",
+          "role": "DS",
+          "expected_overall_match": 0.85,
+          "expected_cluster_matches": {
+            "MLE": 1.0,
+            "DS": 0.769,
+            "SWE": 1.0,
+            "QR": 1.0,
+            "QD": null
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_DS_01_Amazon_SeniorDataScientist_DML",
+          "jd_pdf": "JD_DS_01_Amazon_SeniorDataScientist_DML.pdf",
+          "company": "Amazon",
+          "role": "DS",
+          "expected_overall_match": 0.8,
+          "expected_cluster_matches": {
+            "MLE": 1.0,
+            "DS": 0.714,
+            "SWE": 1.0,
+            "QR": 1.0,
+            "QD": null
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_MLE_01_Amazon_TrainingInfra",
+          "jd_pdf": "JD_MLE_01_Amazon_TrainingInfra.pdf",
+          "company": "Amazon",
+          "role": "MLE",
+          "expected_overall_match": 0.4,
+          "expected_cluster_matches": {
+            "MLE": 0.286,
+            "DS": 1.0,
+            "SWE": 0.6,
+            "QR": null,
+            "QD": null
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        }
+      ]
+    },
+    {
+      "resume_id": "R3_SWE_Enriched",
+      "resume_file": "Resume_3_SWE_Enriched.txt",
+      "resume_cluster_fit_ground_truth": {
+        "SWE": 0.5,
+        "MLE": 0.2,
+        "QD": 0.15,
+        "DS": 0.1,
+        "QR": 0.05
+      },
+      "notes": "Distributed systems SWE; quant infra adjacent (QD) and ML integration.",
+      "expected_best_fit_jds": [
+        {
+          "jd_id": "JD_SWE_02_Amazon_Neuron_DistributedTraining",
+          "jd_pdf": "JD_SWE_02_Amazon_Neuron_DistributedTraining.pdf",
+          "company": "Amazon (AWS Neuron)",
+          "role": "SWE",
+          "expected_overall_match": 0.8,
+          "expected_cluster_matches": {
+            "MLE": 1.0,
+            "DS": 1.0,
+            "SWE": 0.714,
+            "QR": null,
+            "QD": 1.0
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_SWE_01_Google_DistributedCloud",
+          "jd_pdf": "JD_SWE_01_Google_DistributedCloud.pdf",
+          "company": "Google",
+          "role": "SWE",
+          "expected_overall_match": 0.75,
+          "expected_cluster_matches": {
+            "MLE": 1.0,
+            "DS": 1.0,
+            "SWE": 0.667,
+            "QR": null,
+            "QD": 1.0
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+          "jd_pdf": "JD_QD_01_TwoSigma_QuantSoftwareEngineer.pdf",
+          "company": "Two Sigma",
+          "role": "QD",
+          "expected_overall_match": 0.5,
+          "expected_cluster_matches": {
+            "MLE": null,
+            "DS": 1.0,
+            "SWE": 1.0,
+            "QR": 0.5,
+            "QD": 0.25
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        }
+      ]
+    },
+    {
+      "resume_id": "R4_QR_Enriched",
+      "resume_file": "Resume_4_QR_Enriched.txt",
+      "resume_cluster_fit_ground_truth": {
+        "QR": 0.55,
+        "DS": 0.2,
+        "QD": 0.15,
+        "SWE": 0.05,
+        "MLE": 0.05
+      },
+      "notes": "Quant research core with DS/ML; some QD collaboration.",
+      "expected_best_fit_jds": [
+        {
+          "jd_id": "JD_QR_01_TwoSigma_QuantResearcher_Experienced",
+          "jd_pdf": "JD_QR_01_TwoSigma_QuantResearcher_Experienced.pdf",
+          "company": "Two Sigma",
+          "role": "QR",
+          "expected_overall_match": 0.85,
+          "expected_cluster_matches": {
+            "MLE": 1.0,
+            "DS": 1.0,
+            "SWE": null,
+            "QR": 0.786,
+            "QD": 1.0
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_QR_02_Citadel_QuantResearch_Profile",
+          "jd_pdf": "JD_QR_02_Citadel_QuantResearch_Profile.pdf",
+          "company": "Citadel",
+          "role": "QR",
+          "expected_overall_match": 0.8,
+          "expected_cluster_matches": {
+            "MLE": 1.0,
+            "DS": 1.0,
+            "SWE": null,
+            "QR": 0.733,
+            "QD": 1.0
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+          "jd_pdf": "JD_QD_01_TwoSigma_QuantSoftwareEngineer.pdf",
+          "company": "Two Sigma",
+          "role": "QD",
+          "expected_overall_match": 0.35,
+          "expected_cluster_matches": {
+            "MLE": null,
+            "DS": 1.0,
+            "SWE": 0.2,
+            "QR": 1.0,
+            "QD": 0.25
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        }
+      ]
+    },
+    {
+      "resume_id": "R5_QD_Switcher",
+      "resume_file": "Resume_5_QD_Enriched_Career_Switcher.txt",
+      "resume_cluster_fit_ground_truth": {
+        "QD": 0.45,
+        "SWE": 0.25,
+        "QR": 0.15,
+        "DS": 0.1,
+        "MLE": 0.05
+      },
+      "notes": "QD primary with SWE background; career switcher signals; modest QR coursework.",
+      "expected_best_fit_jds": [
+        {
+          "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+          "jd_pdf": "JD_QD_01_TwoSigma_QuantSoftwareEngineer.pdf",
+          "company": "Two Sigma",
+          "role": "QD",
+          "expected_overall_match": 0.85,
+          "expected_cluster_matches": {
+            "MLE": null,
+            "DS": 1.0,
+            "SWE": 1.0,
+            "QR": 1.0,
+            "QD": 0.75
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_QD_02_Citadel_QuantDeveloper_Profile",
+          "jd_pdf": "JD_QD_02_Citadel_QuantDeveloper_Profile.pdf",
+          "company": "Citadel",
+          "role": "QD",
+          "expected_overall_match": 0.85,
+          "expected_cluster_matches": {
+            "MLE": null,
+            "DS": 1.0,
+            "SWE": 0.833,
+            "QR": 1.0,
+            "QD": 0.818
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        },
+        {
+          "jd_id": "JD_QR_01_TwoSigma_QuantResearcher_Experienced",
+          "jd_pdf": "JD_QR_01_TwoSigma_QuantResearcher_Experienced.pdf",
+          "company": "Two Sigma",
+          "role": "QR",
+          "expected_overall_match": 0.4,
+          "expected_cluster_matches": {
+            "MLE": 1.0,
+            "DS": 0.667,
+            "SWE": null,
+            "QR": 0.214,
+            "QD": 1.0
+          },
+          "rationale": "Best-fit based on primary cluster alignment and secondary overlap; see vectors."
+        }
+      ]
+    }
+  ]
+}

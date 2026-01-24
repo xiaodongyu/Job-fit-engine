@@ -25,6 +25,8 @@ npm run dev
 
 Open http://localhost:3000 in your browser.
 
+**Testing with local files (resume, JD, additional materials):** Put them in **`test_fixtures/`** and run `./scripts/test-offline.sh -r test_fixtures/resume.pdf -j test_fixtures/jd.txt` (see [test_fixtures/README.md](test_fixtures/README.md) and [docs/testing-offline.md](docs/testing-offline.md)).
+
 ## Architecture
 
 ```
@@ -63,6 +65,8 @@ Upload → Parse (PDF/DOCX/TXT) → Chunk → Embed (Gemini) → FAISS Index
 - **Grounded outputs**: All claims traced to evidence chunks
 
 ## Quick Start
+
+**One-command setup (Linux/macOS):** Run `./setup.sh` from the project root (requires network, Python 3.11+, Node 18+). Then edit `backend/.env` with your `GEMINI_API_KEY` and start backend + frontend as below.
 
 ### 1. Backend Setup
 
@@ -192,28 +196,46 @@ curl -X POST http://localhost:8000/resume/generate \
   }'
 ```
 
-### Cluster Experience (Placeholder)
+### Add Materials (merge into resume, re-run pipeline)
+```bash
+# Form (file or text)
+curl -X POST http://localhost:8000/resume/materials/add \
+  -F "session_id=abc123" -F "text=Additional project: Built recommendation API with FastAPI."
+
+# JSON (text only)
+curl -X POST http://localhost:8000/resume/materials/add/json \
+  -H "Content-Type: application/json" \
+  -d '{ "session_id": "abc123", "text": "Additional project: Built recommendation API." }'
+# Returns: { "session_id": "abc123", "upload_id": "..." } — poll /resume/status
+```
+
+### Match by Cluster (per-cluster JD match % + evidence)
+```bash
+curl -X POST http://localhost:8000/analyze/match-by-cluster \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "abc123",
+    "use_curated_jd": false,
+    "jd_text": "Software Engineer: Python, AWS, 3+ years."
+  }'
+# Returns: { "cluster_matches": [{ "cluster": "MLE", "match_pct": 0.85, "evidence": {...} }, ...], "overall_match_pct": 0.72 }
+```
+
+### Cluster Experience
 ```bash
 curl -X POST http://localhost:8000/experience/cluster \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "abc123",
-    "items": [
-      { "id": "1", "label": "work", "text": "3 years at TechCorp building APIs", "source": "sticker" },
-      { "id": "2", "label": "skill", "text": "Python, FastAPI, PostgreSQL", "source": "sticker" },
-      { "id": "3", "label": "project", "text": "Built ML pipeline for recommendations", "source": "sticker" }
-    ],
-    "resume_text": "Optional pasted resume text here..."
+    "items": [],
+    "resume_text": null
   }'
-# Returns: { "session_id": "...", "clusters": [...], "total_items": N }
+# With session_id + processed resume: returns MLE/DS/SWE/QR/QD clusters with evidence.
+# Fallback (no extraction): use items + resume_text; returns single "All Experiences" cluster.
 ```
 
-Data sources for clustering:
-- `items`: Stickers from the frontend
-- `resume_text`: Optional pasted resume text
-- `session_id`: If provided, also retrieves uploaded resume chunks from the session
-
-> **Note:** This is a placeholder endpoint. Currently returns all items in a single cluster. TODO: Implement actual clustering algorithm.
+- **Primary:** When `session_id` has extraction + clusters (from resume upload), returns role-based clusters (MLE, DS, SWE, QR, QD) with evidence.
+- **Fallback:** `items` (stickers), `resume_text`, and optional session resume chunks → single cluster.
 
 ## Grounding Rules
 

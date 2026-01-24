@@ -9,16 +9,19 @@ load_dotenv()
 from models import (
     JDIngestRequest, JDIngestResponse,
     ResumeUploadTextRequest, ResumeUploadResponse, ResumeStatusResponse,
+    AddMaterialsRequest,
     AnalyzeFitRequest, AnalyzeFitResponse,
-    RoleRecommendation, Requirements, GapAnalysis, Evidence,
+    RoleRecommendation, Requirements, GapAnalysis, Evidence, EvidenceChunk,
     ResumeGenerateRequest, ResumeGenerateResponse, ResumeStructured,
     HealthResponse, UploadStatus,
-    ClusterRequest, ClusterResponse, ClusteredGroup, ExperienceItem
+    ClusterRequest, ClusterResponse, ClusteredGroup, ExperienceItem,
+    MatchByClusterRequest, MatchByClusterResponse, ClusterMatch,
 )
 from prompts import (
     ROLE_FIT_SYSTEM, ROLE_FIT_SCHEMA,
     RESUME_GENERATE_SYSTEM, RESUME_GENERATE_SCHEMA,
-    build_fit_prompt, build_generate_prompt
+    build_fit_prompt, build_generate_prompt,
+    MATCH_BY_CLUSTER_SYSTEM, MATCH_BY_CLUSTER_SCHEMA, build_match_by_cluster_prompt,
 )
 import rag
 import gemini_client
@@ -127,6 +130,53 @@ async def resume_status(upload_id: str = Query(...)):
     )
 
 
+@app.post("/resume/materials/add", response_model=ResumeUploadResponse)
+async def resume_materials_add(
+    session_id: str = Form(...),
+    file: UploadFile = File(None),
+    text: str = Form(None),
+):
+    """Add materials to existing session. Merges with resume, re-runs extract + cluster + index. Use /resume/status with returned upload_id."""
+    new_text = None
+    if file:
+        content = await file.read()
+        if not content:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+        try:
+            new_text = rag.parse_file(content, file.filename or "unknown.txt")
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to parse file: {e}")
+    elif text:
+        new_text = text
+    else:
+        raise HTTPException(status_code=400, detail="Either file or text must be provided")
+    if not new_text or not new_text.strip():
+        raise HTTPException(status_code=400, detail="No text content in materials")
+    try:
+        upload_id = rag.start_add_materials(session_id, new_text.strip())
+        return ResumeUploadResponse(session_id=session_id, upload_id=upload_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/resume/materials/add/json", response_model=ResumeUploadResponse)
+async def resume_materials_add_json(request: AddMaterialsRequest):
+    """Add materials as JSON. Merges with session resume, re-runs pipeline. Poll /resume/status with upload_id."""
+    if not request.text or not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text is required")
+    try:
+        upload_id = rag.start_add_materials(request.session_id, request.text.strip())
+        return ResumeUploadResponse(session_id=request.session_id, upload_id=upload_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/analyze/fit", response_model=AnalyzeFitResponse)
 async def analyze_fit(request: AnalyzeFitRequest):
     """Analyze resume fit against JD requirements."""
@@ -199,6 +249,101 @@ async def analyze_fit(request: AnalyzeFitRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/analyze/match-by-cluster", response_model=MatchByClusterResponse)
+async def analyze_match_by_cluster(request: MatchByClusterRequest):
+    """Per-cluster match % vs JD with evidence. Requires extraction + clusters (upload resume first)."""
+    if not rag.session_is_ready(request.session_id):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Session {request.session_id} resume not ready. Check /resume/status.",
+        )
+    data = rag.load_clusters(request.session_id)
+    if not data or not data.get("clusters"):
+        raise HTTPException(
+            status_code=400,
+            detail="No clusters found. Upload resume and wait for processing, then retry.",
+        )
+    clusters = data["clusters"]
+    meta = rag.get_all_resume_chunks(request.session_id)
+    resume_chunks = [
+        EvidenceChunk(chunk_id=m["chunk_id"], text=m["text"], source="resume", score=1.0)
+        for m in meta
+    ]
+    query = "Job requirements, skills, and experience"
+    if request.use_curated_jd:
+        jd_chunks = rag.search_jd_index(query, role=None)
+        if not jd_chunks:
+            raise HTTPException(
+                status_code=400,
+                detail="No curated JDs found. Ingest JDs first or provide jd_text.",
+            )
+    elif request.jd_text:
+        jd_chunks = rag.search_temp_jd(request.jd_text, query)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Either use_curated_jd=true or provide jd_text.",
+        )
+    user_prompt = build_match_by_cluster_prompt(clusters, resume_chunks, jd_chunks)
+    debug_info = None
+    if request.debug:
+        debug_info = {
+            "system_prompt": MATCH_BY_CLUSTER_SYSTEM,
+            "user_prompt": user_prompt,
+            "clusters": [
+                {
+                    "cluster_id": g.get("cluster_id"),
+                    "cluster_label": g.get("cluster_label"),
+                    "items_count": len(g.get("items", [])),
+                    "items": [
+                        {"id": i.get("id"), "label": i.get("label"), "text": (i.get("text") or "")[:300]}
+                        for i in g.get("items", [])
+                    ],
+                }
+                for g in clusters
+            ],
+            "resume_chunks": [
+                {"chunk_id": c.chunk_id, "text": c.text[:500], "source": c.source, "score": c.score}
+                for c in resume_chunks
+            ],
+            "jd_chunks": [
+                {"chunk_id": c.chunk_id, "text": c.text[:500], "source": c.source, "score": c.score}
+                for c in jd_chunks
+            ],
+        }
+    result = gemini_client.generate(
+        MATCH_BY_CLUSTER_SYSTEM, user_prompt, MATCH_BY_CLUSTER_SCHEMA
+    )
+    content = result.get("content") or {}
+    if isinstance(content, str):
+        content = {}
+    r_map = {c.chunk_id: c for c in resume_chunks}
+    j_map = {c.chunk_id: c for c in jd_chunks}
+    cluster_matches = []
+    for m in content.get("cluster_matches", []):
+        cluster = m.get("cluster", "")
+        match_pct = max(0.0, min(1.0, m.get("match_pct", 0.0)))
+        r_ids = m.get("resume_chunk_ids", [])
+        j_ids = m.get("jd_chunk_ids", [])
+        r_ev = [r_map[x] for x in r_ids if x in r_map]
+        j_ev = [j_map[x] for x in j_ids if x in j_map]
+        cluster_matches.append(
+            ClusterMatch(
+                cluster=cluster,
+                match_pct=match_pct,
+                evidence=Evidence(resume_chunks=r_ev, jd_chunks=j_ev),
+            )
+        )
+    overall = content.get("overall_match_pct")
+    if overall is not None:
+        overall = max(0.0, min(1.0, overall))
+    return MatchByClusterResponse(
+        cluster_matches=cluster_matches,
+        overall_match_pct=overall,
+        debug=debug_info,
+    )
 
 
 def generate_resume_internal(request: ResumeGenerateRequest) -> tuple:
@@ -367,60 +512,70 @@ async def resume_export_docx(request: ResumeGenerateRequest):
 
 
 # =============================================================================
-# CLUSTERING ENDPOINTS (PLACEHOLDER)
+# CLUSTERING
 # =============================================================================
 
 @app.post("/experience/cluster", response_model=ClusterResponse)
 async def cluster_experience(request: ClusterRequest):
     """
-    Cluster user's experience items (stickers, texts, resume chunks).
-    
-    Data sources:
-    1. items: Stickers and other experience items from frontend
-    2. resume_text: Optional pasted resume text
-    3. session_id: If provided and valid, retrieves uploaded resume chunks from session
-    
-    PLACEHOLDER IMPLEMENTATION: Returns all items in a single cluster.
-    TODO: Implement actual clustering algorithm (e.g., k-means, hierarchical, etc.)
+    Cluster user's experience items.
+
+    Primary: When session_id is provided and session has extraction + clusters (from resume upload),
+    returns role-based clusters (MLE/DS/SWE/QR/QD) with evidence.
+
+    Fallback: When no extraction (stickers-only, pasted text, or old session), aggregates
+    items + resume_text + optional session resume chunks into a single "All Experiences" cluster.
     """
     session_id = request.session_id or uuid.uuid4().hex[:8]
-    
-    # Collect all items
+
+    # Primary: use stored clusters from resume extraction
+    if request.session_id:
+        data = rag.load_clusters(request.session_id)
+        if data and data.get("clusters"):
+            clusters = []
+            for c in data["clusters"]:
+                try:
+                    g = ClusteredGroup.model_validate(c)
+                    clusters.append(g)
+                except Exception:
+                    continue
+            if clusters:
+                total = data.get("total_items", sum(len(g.items) for g in clusters))
+                return ClusterResponse(
+                    session_id=session_id,
+                    clusters=clusters,
+                    total_items=total,
+                    role_fit_distribution=data.get("role_fit_distribution"),
+                )
+
+    # Fallback: sticker/paste flow, single cluster
     all_items: list[ExperienceItem] = list(request.items)
-    
-    # If resume_text is provided (pasted text), add it as a single item
     if request.resume_text and request.resume_text.strip():
         all_items.append(ExperienceItem(
             id=f"pasted_{uuid.uuid4().hex[:6]}",
             label="resume",
             text=request.resume_text.strip(),
-            source="pasted_text"
+            source="pasted_text",
         ))
-    
-    # If session_id is provided and has uploaded resume data, retrieve those chunks
     if request.session_id and rag.session_is_ready(request.session_id):
-        resume_chunks = rag.get_all_resume_chunks(request.session_id)
-        for chunk in resume_chunks:
+        for chunk in rag.get_all_resume_chunks(request.session_id):
             all_items.append(ExperienceItem(
                 id=chunk.get("chunk_id", f"chunk_{uuid.uuid4().hex[:6]}"),
                 label="resume",
                 text=chunk.get("text", ""),
-                source="uploaded_resume"
+                source="uploaded_resume",
             ))
-    
-    # PLACEHOLDER: Put all items into one cluster
-    # TODO: Replace with actual clustering algorithm
     single_cluster = ClusteredGroup(
         cluster_id="cluster_0",
         cluster_label="All Experiences",
         items=all_items,
-        summary="All user experiences grouped together (placeholder - no clustering applied)"
+        summary="All user experiences grouped together (no extraction; use resume upload for MLE/DS/SWE/QR/QD clusters)",
     )
-    
     return ClusterResponse(
         session_id=session_id,
         clusters=[single_cluster],
-        total_items=len(all_items)
+        total_items=len(all_items),
+        role_fit_distribution=None,
     )
 
 

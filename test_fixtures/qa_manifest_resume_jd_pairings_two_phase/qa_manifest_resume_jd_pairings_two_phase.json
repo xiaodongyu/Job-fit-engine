@@ -1,0 +1,1007 @@
+{
+  "manifest_version": "1.0",
+  "generated_date": "2026-01-24",
+  "purpose": "Product QA: two-phase resume\u2194JD pairings (resume_only vs resume_plus_addon) with expected match deltas.",
+  "artifacts": {
+    "resume_bundle_zip": "quant_cross_functional_role_fit_benchmark.zip",
+    "addon_bundle_zip": "additional_materials_complement_resumes.zip",
+    "jd_bundle_zip": "senior_us_mixed_jds_pdf_bundle.zip"
+  },
+  "clusters": [
+    "MLE",
+    "DS",
+    "SWE",
+    "QR",
+    "QD"
+  ],
+  "scoring_model": "overall_match = 1 - L1_distance(cluster_vectors)/2; per_cluster_match = min(resume, jd)/jd for jd>0",
+  "tolerances": {
+    "overall_match_abs_error": 0.08,
+    "per_cluster_match_abs_error": 0.12,
+    "delta_overall_match_abs_error": 0.06
+  },
+  "cases": [
+    {
+      "resume_id": "R1_MLE_Enriched",
+      "resume_file": "Resume_1_MLE_Enriched.txt",
+      "addon_id": "A1_MLE_Project_Notes",
+      "addon_file": "Resume_1_MLE_Addon_Project_Notes.txt",
+      "resume_cluster_fit_ground_truth": {
+        "resume_only": {
+          "MLE": 0.55,
+          "SWE": 0.25,
+          "DS": 0.15,
+          "QD": 0.05,
+          "QR": 0.0
+        },
+        "resume_plus_addon_target": {
+          "MLE": 0.62,
+          "SWE": 0.26,
+          "DS": 0.1,
+          "QD": 0.02,
+          "QR": 0.0
+        }
+      },
+      "augmentation_expectations": {
+        "directional": {
+          "MLE": "+",
+          "SWE": "+",
+          "DS": "~",
+          "QD": "~",
+          "QR": "~"
+        },
+        "min_increase": {
+          "MLE": 0.07,
+          "SWE": 0.03
+        },
+        "max_increase_other": 0.08
+      },
+      "resume_level_assertions": [
+        "Predicted MLE remains top-1 cluster after augmentation.",
+        "At least 2 MLE evidence items come from addon source.",
+        "System cites exact phrases from addon for feature store / MLflow / Kubernetes.",
+        "No large increase (>max_unexpected_delta) in QR or QD."
+      ],
+      "expected_best_fit_jds_two_phase": [
+        {
+          "jd_id": "JD_MLE_01_Amazon_TrainingInfra",
+          "jd_pdf": "JD_MLE_01_Amazon_TrainingInfra.pdf",
+          "company": "Amazon",
+          "role": "MLE",
+          "jd_cluster_demand": {
+            "MLE": 0.7,
+            "SWE": 0.25,
+            "DS": 0.05,
+            "QD": 0.0,
+            "QR": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.85,
+            "expected_cluster_matches": {
+              "MLE": 0.786,
+              "DS": 1.0,
+              "SWE": 1.0,
+              "QR": null,
+              "QD": null
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_1_MLE_Addon_Project_Notes.txt",
+            "expected_overall_match": 0.92,
+            "expected_cluster_matches": {
+              "MLE": 0.886,
+              "DS": 1.0,
+              "SWE": 1.0,
+              "QR": null,
+              "QD": null
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.07,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "MLE": [
+                "feature store",
+                "MLflow model versioning/rollback",
+                "Kubernetes deployment/autoscaling",
+                "inference latency optimization"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_MLE_02_Amazon_GenAIIC",
+          "jd_pdf": "JD_MLE_02_Amazon_GenAIIC.pdf",
+          "company": "Amazon (AWS)",
+          "role": "MLE",
+          "jd_cluster_demand": {
+            "MLE": 0.75,
+            "SWE": 0.15,
+            "DS": 0.1,
+            "QD": 0.0,
+            "QR": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.8,
+            "expected_cluster_matches": {
+              "MLE": 0.733,
+              "DS": 1.0,
+              "SWE": 1.0,
+              "QR": null,
+              "QD": null
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_1_MLE_Addon_Project_Notes.txt",
+            "expected_overall_match": 0.87,
+            "expected_cluster_matches": {
+              "MLE": 0.827,
+              "DS": 1.0,
+              "SWE": 1.0,
+              "QR": null,
+              "QD": null
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.07,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "MLE": [
+                "feature store",
+                "MLflow model versioning/rollback",
+                "Kubernetes deployment/autoscaling",
+                "inference latency optimization"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_SWE_02_Amazon_Neuron_DistributedTraining",
+          "jd_pdf": "JD_SWE_02_Amazon_Neuron_DistributedTraining.pdf",
+          "company": "Amazon (AWS Neuron)",
+          "role": "SWE",
+          "jd_cluster_demand": {
+            "SWE": 0.7,
+            "MLE": 0.2,
+            "DS": 0.05,
+            "QD": 0.05,
+            "QR": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.55,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 1.0,
+              "SWE": 0.357,
+              "QR": null,
+              "QD": 1.0
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_1_MLE_Addon_Project_Notes.txt",
+            "expected_overall_match": 0.53,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 1.0,
+              "SWE": 0.371,
+              "QR": null,
+              "QD": 0.4
+            }
+          },
+          "expected_delta": {
+            "overall_match": -0.02,
+            "direction": "-"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "MLE": [
+                "feature store",
+                "MLflow model versioning/rollback",
+                "Kubernetes deployment/autoscaling",
+                "inference latency optimization"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "resume_id": "R2_DS_Enriched",
+      "resume_file": "Resume_2_DS_Enriched.txt",
+      "addon_id": "A2_DS_Publication_Summary",
+      "addon_file": "Resume_2_DS_Addon_Publication_Summary.txt",
+      "resume_cluster_fit_ground_truth": {
+        "resume_only": {
+          "DS": 0.5,
+          "MLE": 0.2,
+          "SWE": 0.15,
+          "QR": 0.1,
+          "QD": 0.05
+        },
+        "resume_plus_addon_target": {
+          "DS": 0.58,
+          "MLE": 0.16,
+          "SWE": 0.12,
+          "QR": 0.12,
+          "QD": 0.02
+        }
+      },
+      "augmentation_expectations": {
+        "directional": {
+          "DS": "+",
+          "QR": "+",
+          "MLE": "~",
+          "SWE": "~",
+          "QD": "~"
+        },
+        "min_increase": {
+          "DS": 0.06,
+          "QR": 0.03
+        },
+        "max_increase_other": 0.08
+      },
+      "resume_level_assertions": [
+        "Predicted DS remains top-1 cluster after augmentation.",
+        "System increases DS score by at least expected_delta_min.",
+        "QR may increase modestly, but must not overtake DS.",
+        "Evidence must distinguish causal inference (DS) from market alpha research (QR)."
+      ],
+      "expected_best_fit_jds_two_phase": [
+        {
+          "jd_id": "JD_DS_02_Microsoft_SeniorDataScientist_MediaOptimization",
+          "jd_pdf": "JD_DS_02_Microsoft_SeniorDataScientist_MediaOptimization.pdf",
+          "company": "Microsoft",
+          "role": "DS",
+          "jd_cluster_demand": {
+            "DS": 0.65,
+            "SWE": 0.1,
+            "MLE": 0.15,
+            "QR": 0.1,
+            "QD": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.85,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 0.769,
+              "SWE": 1.0,
+              "QR": 1.0,
+              "QD": null
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_2_DS_Addon_Publication_Summary.txt",
+            "expected_overall_match": 0.93,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 0.892,
+              "SWE": 1.0,
+              "QR": 1.0,
+              "QD": null
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.08,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "DS": [
+                "difference-in-differences",
+                "synthetic control",
+                "price elasticity under policy changes",
+                "business impact attribution"
+              ],
+              "QR": [
+                "applied research framing (but not alpha research)"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_DS_01_Amazon_SeniorDataScientist_DML",
+          "jd_pdf": "JD_DS_01_Amazon_SeniorDataScientist_DML.pdf",
+          "company": "Amazon",
+          "role": "DS",
+          "jd_cluster_demand": {
+            "DS": 0.7,
+            "MLE": 0.15,
+            "SWE": 0.1,
+            "QR": 0.05,
+            "QD": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.8,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 0.714,
+              "SWE": 1.0,
+              "QR": 1.0,
+              "QD": null
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_2_DS_Addon_Publication_Summary.txt",
+            "expected_overall_match": 0.88,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 0.829,
+              "SWE": 1.0,
+              "QR": 1.0,
+              "QD": null
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.08,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "DS": [
+                "difference-in-differences",
+                "synthetic control",
+                "price elasticity under policy changes",
+                "business impact attribution"
+              ],
+              "QR": [
+                "applied research framing (but not alpha research)"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_MLE_01_Amazon_TrainingInfra",
+          "jd_pdf": "JD_MLE_01_Amazon_TrainingInfra.pdf",
+          "company": "Amazon",
+          "role": "MLE",
+          "jd_cluster_demand": {
+            "MLE": 0.7,
+            "SWE": 0.25,
+            "DS": 0.05,
+            "QD": 0.0,
+            "QR": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.4,
+            "expected_cluster_matches": {
+              "MLE": 0.286,
+              "DS": 1.0,
+              "SWE": 0.6,
+              "QR": null,
+              "QD": null
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_2_DS_Addon_Publication_Summary.txt",
+            "expected_overall_match": 0.33,
+            "expected_cluster_matches": {
+              "MLE": 0.229,
+              "DS": 1.0,
+              "SWE": 0.48,
+              "QR": null,
+              "QD": null
+            }
+          },
+          "expected_delta": {
+            "overall_match": -0.07,
+            "direction": "-"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "DS": [
+                "difference-in-differences",
+                "synthetic control",
+                "price elasticity under policy changes",
+                "business impact attribution"
+              ],
+              "QR": [
+                "applied research framing (but not alpha research)"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "resume_id": "R3_SWE_Enriched",
+      "resume_file": "Resume_3_SWE_Enriched.txt",
+      "addon_id": "A3_SWE_System_Design",
+      "addon_file": "Resume_3_SWE_Addon_System_Design.txt",
+      "resume_cluster_fit_ground_truth": {
+        "resume_only": {
+          "SWE": 0.5,
+          "MLE": 0.2,
+          "QD": 0.15,
+          "DS": 0.1,
+          "QR": 0.05
+        },
+        "resume_plus_addon_target": {
+          "SWE": 0.58,
+          "MLE": 0.17,
+          "QD": 0.17,
+          "DS": 0.06,
+          "QR": 0.02
+        }
+      },
+      "augmentation_expectations": {
+        "directional": {
+          "SWE": "+",
+          "QD": "+",
+          "MLE": "~",
+          "DS": "~",
+          "QR": "~"
+        },
+        "min_increase": {
+          "SWE": 0.06,
+          "QD": 0.03
+        },
+        "max_increase_other": 0.08
+      },
+      "resume_level_assertions": [
+        "Predicted SWE remains top-1 cluster after augmentation.",
+        "At least 2 SWE evidence items come from addon source.",
+        "QD can increase slightly due to infra/latency signals but must not exceed SWE.",
+        "QR must not increase materially."
+      ],
+      "expected_best_fit_jds_two_phase": [
+        {
+          "jd_id": "JD_SWE_02_Amazon_Neuron_DistributedTraining",
+          "jd_pdf": "JD_SWE_02_Amazon_Neuron_DistributedTraining.pdf",
+          "company": "Amazon (AWS Neuron)",
+          "role": "SWE",
+          "jd_cluster_demand": {
+            "SWE": 0.7,
+            "MLE": 0.2,
+            "DS": 0.05,
+            "QD": 0.05,
+            "QR": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.8,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 1.0,
+              "SWE": 0.714,
+              "QR": null,
+              "QD": 1.0
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_3_SWE_Addon_System_Design.txt",
+            "expected_overall_match": 0.85,
+            "expected_cluster_matches": {
+              "MLE": 0.85,
+              "DS": 1.0,
+              "SWE": 0.829,
+              "QR": null,
+              "QD": 1.0
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.05,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "SWE": [
+                "architecture review",
+                "fault-tolerant processing/backpressure",
+                "events/sec throughput",
+                "latency SLA integration"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_SWE_01_Google_DistributedCloud",
+          "jd_pdf": "JD_SWE_01_Google_DistributedCloud.pdf",
+          "company": "Google",
+          "role": "SWE",
+          "jd_cluster_demand": {
+            "SWE": 0.75,
+            "MLE": 0.1,
+            "DS": 0.1,
+            "QD": 0.05,
+            "QR": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.75,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 1.0,
+              "SWE": 0.667,
+              "QR": null,
+              "QD": 1.0
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_3_SWE_Addon_System_Design.txt",
+            "expected_overall_match": 0.79,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 0.6,
+              "SWE": 0.773,
+              "QR": null,
+              "QD": 1.0
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.04,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "SWE": [
+                "architecture review",
+                "fault-tolerant processing/backpressure",
+                "events/sec throughput",
+                "latency SLA integration"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+          "jd_pdf": "JD_QD_01_TwoSigma_QuantSoftwareEngineer.pdf",
+          "company": "Two Sigma",
+          "role": "QD",
+          "jd_cluster_demand": {
+            "QD": 0.6,
+            "SWE": 0.25,
+            "QR": 0.1,
+            "DS": 0.05,
+            "MLE": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.5,
+            "expected_cluster_matches": {
+              "MLE": null,
+              "DS": 1.0,
+              "SWE": 1.0,
+              "QR": 0.5,
+              "QD": 0.25
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_3_SWE_Addon_System_Design.txt",
+            "expected_overall_match": 0.49,
+            "expected_cluster_matches": {
+              "MLE": null,
+              "DS": 1.0,
+              "SWE": 1.0,
+              "QR": 0.2,
+              "QD": 0.283
+            }
+          },
+          "expected_delta": {
+            "overall_match": -0.01,
+            "direction": "~"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "SWE": [
+                "architecture review",
+                "fault-tolerant processing/backpressure",
+                "events/sec throughput",
+                "latency SLA integration"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "resume_id": "R4_QR_Enriched",
+      "resume_file": "Resume_4_QR_Enriched.txt",
+      "addon_id": "A4_QR_Research_Notes",
+      "addon_file": "Resume_4_QR_Addon_Research_Notes.txt",
+      "resume_cluster_fit_ground_truth": {
+        "resume_only": {
+          "QR": 0.55,
+          "DS": 0.2,
+          "QD": 0.15,
+          "SWE": 0.05,
+          "MLE": 0.05
+        },
+        "resume_plus_addon_target": {
+          "QR": 0.63,
+          "DS": 0.18,
+          "QD": 0.13,
+          "SWE": 0.03,
+          "MLE": 0.03
+        }
+      },
+      "augmentation_expectations": {
+        "directional": {
+          "QR": "+",
+          "QD": "~",
+          "DS": "~",
+          "SWE": "~",
+          "MLE": "~"
+        },
+        "min_increase": {
+          "QR": 0.06
+        },
+        "max_increase_other": 0.08
+      },
+      "resume_level_assertions": [
+        "Predicted QR remains top-1 cluster after augmentation.",
+        "Evidence should include quant-research hallmarks: signals, costs, regimes, validation.",
+        "System must not confuse QR research notes with generic DS modeling."
+      ],
+      "expected_best_fit_jds_two_phase": [
+        {
+          "jd_id": "JD_QR_01_TwoSigma_QuantResearcher_Experienced",
+          "jd_pdf": "JD_QR_01_TwoSigma_QuantResearcher_Experienced.pdf",
+          "company": "Two Sigma",
+          "role": "QR",
+          "jd_cluster_demand": {
+            "QR": 0.7,
+            "DS": 0.15,
+            "QD": 0.1,
+            "MLE": 0.05,
+            "SWE": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.85,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 1.0,
+              "SWE": null,
+              "QR": 0.786,
+              "QD": 1.0
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_4_QR_Addon_Research_Notes.txt",
+            "expected_overall_match": 0.91,
+            "expected_cluster_matches": {
+              "MLE": 0.6,
+              "DS": 1.0,
+              "SWE": null,
+              "QR": 0.9,
+              "QD": 1.0
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.06,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "QR": [
+                "signal robustness under transaction costs/regime shifts",
+                "Bayesian shrinkage / overfitting control",
+                "paper trading validation"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_QR_02_Citadel_QuantResearch_Profile",
+          "jd_pdf": "JD_QR_02_Citadel_QuantResearch_Profile.pdf",
+          "company": "Citadel",
+          "role": "QR",
+          "jd_cluster_demand": {
+            "QR": 0.75,
+            "DS": 0.1,
+            "QD": 0.1,
+            "MLE": 0.05,
+            "SWE": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.8,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 1.0,
+              "SWE": null,
+              "QR": 0.733,
+              "QD": 1.0
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_4_QR_Addon_Research_Notes.txt",
+            "expected_overall_match": 0.86,
+            "expected_cluster_matches": {
+              "MLE": 0.6,
+              "DS": 1.0,
+              "SWE": null,
+              "QR": 0.84,
+              "QD": 1.0
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.06,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "QR": [
+                "signal robustness under transaction costs/regime shifts",
+                "Bayesian shrinkage / overfitting control",
+                "paper trading validation"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+          "jd_pdf": "JD_QD_01_TwoSigma_QuantSoftwareEngineer.pdf",
+          "company": "Two Sigma",
+          "role": "QD",
+          "jd_cluster_demand": {
+            "QD": 0.6,
+            "SWE": 0.25,
+            "QR": 0.1,
+            "DS": 0.05,
+            "MLE": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.35,
+            "expected_cluster_matches": {
+              "MLE": null,
+              "DS": 1.0,
+              "SWE": 0.2,
+              "QR": 1.0,
+              "QD": 0.25
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_4_QR_Addon_Research_Notes.txt",
+            "expected_overall_match": 0.31,
+            "expected_cluster_matches": {
+              "MLE": null,
+              "DS": 1.0,
+              "SWE": 0.12,
+              "QR": 1.0,
+              "QD": 0.217
+            }
+          },
+          "expected_delta": {
+            "overall_match": -0.04,
+            "direction": "-"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "QR": [
+                "signal robustness under transaction costs/regime shifts",
+                "Bayesian shrinkage / overfitting control",
+                "paper trading validation"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "resume_id": "R5_QD_Switcher",
+      "resume_file": "Resume_5_QD_Enriched_Career_Switcher.txt",
+      "addon_id": "A5_QD_Transition_Portfolio",
+      "addon_file": "Resume_5_QD_Addon_Transition_Portfolio.txt",
+      "resume_cluster_fit_ground_truth": {
+        "resume_only": {
+          "QD": 0.45,
+          "SWE": 0.25,
+          "QR": 0.15,
+          "DS": 0.1,
+          "MLE": 0.05
+        },
+        "resume_plus_addon_target": {
+          "QD": 0.55,
+          "SWE": 0.22,
+          "QR": 0.16,
+          "DS": 0.05,
+          "MLE": 0.02
+        }
+      },
+      "augmentation_expectations": {
+        "directional": {
+          "QD": "+",
+          "SWE": "~/-",
+          "QR": "+",
+          "DS": "~",
+          "MLE": "~"
+        },
+        "min_increase": {
+          "QD": 0.07,
+          "QR": 0.02
+        },
+        "max_increase_other": 0.08
+      },
+      "resume_level_assertions": [
+        "QD should strengthen; SWE may remain strong but should not grow materially.",
+        "System should explicitly label some QR-related coursework as 'supplemental' or 'learning' unless professional QR evidence exists.",
+        "Evidence must be attributed to addon source for backtesting engine and simulation."
+      ],
+      "expected_best_fit_jds_two_phase": [
+        {
+          "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+          "jd_pdf": "JD_QD_01_TwoSigma_QuantSoftwareEngineer.pdf",
+          "company": "Two Sigma",
+          "role": "QD",
+          "jd_cluster_demand": {
+            "QD": 0.6,
+            "SWE": 0.25,
+            "QR": 0.1,
+            "DS": 0.05,
+            "MLE": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.85,
+            "expected_cluster_matches": {
+              "MLE": null,
+              "DS": 1.0,
+              "SWE": 1.0,
+              "QR": 1.0,
+              "QD": 0.75
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_5_QD_Addon_Transition_Portfolio.txt",
+            "expected_overall_match": 0.92,
+            "expected_cluster_matches": {
+              "MLE": null,
+              "DS": 1.0,
+              "SWE": 0.88,
+              "QR": 1.0,
+              "QD": 0.917
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.07,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "QD": [
+                "C++ backtesting engine",
+                "event-driven simulation",
+                "microsecond resolution",
+                "researcher collaboration to productionize models"
+              ],
+              "QR": [
+                "stochastic calculus / derivatives pricing coursework (aspirational signal)"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_QD_02_Citadel_QuantDeveloper_Profile",
+          "jd_pdf": "JD_QD_02_Citadel_QuantDeveloper_Profile.pdf",
+          "company": "Citadel",
+          "role": "QD",
+          "jd_cluster_demand": {
+            "QD": 0.55,
+            "SWE": 0.3,
+            "QR": 0.1,
+            "DS": 0.05,
+            "MLE": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.85,
+            "expected_cluster_matches": {
+              "MLE": null,
+              "DS": 1.0,
+              "SWE": 0.833,
+              "QR": 1.0,
+              "QD": 0.818
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_5_QD_Addon_Transition_Portfolio.txt",
+            "expected_overall_match": 0.92,
+            "expected_cluster_matches": {
+              "MLE": null,
+              "DS": 1.0,
+              "SWE": 0.733,
+              "QR": 1.0,
+              "QD": 1.0
+            }
+          },
+          "expected_delta": {
+            "overall_match": 0.07,
+            "direction": "+"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "QD": [
+                "C++ backtesting engine",
+                "event-driven simulation",
+                "microsecond resolution",
+                "researcher collaboration to productionize models"
+              ],
+              "QR": [
+                "stochastic calculus / derivatives pricing coursework (aspirational signal)"
+              ]
+            }
+          }
+        },
+        {
+          "jd_id": "JD_QR_01_TwoSigma_QuantResearcher_Experienced",
+          "jd_pdf": "JD_QR_01_TwoSigma_QuantResearcher_Experienced.pdf",
+          "company": "Two Sigma",
+          "role": "QR",
+          "jd_cluster_demand": {
+            "QR": 0.7,
+            "DS": 0.15,
+            "QD": 0.1,
+            "MLE": 0.05,
+            "SWE": 0.0
+          },
+          "resume_only": {
+            "expected_overall_match": 0.4,
+            "expected_cluster_matches": {
+              "MLE": 1.0,
+              "DS": 0.667,
+              "SWE": null,
+              "QR": 0.214,
+              "QD": 1.0
+            }
+          },
+          "resume_plus_addon": {
+            "addon_file": "Resume_5_QD_Addon_Transition_Portfolio.txt",
+            "expected_overall_match": 0.33,
+            "expected_cluster_matches": {
+              "MLE": 0.4,
+              "DS": 0.333,
+              "SWE": null,
+              "QR": 0.229,
+              "QD": 1.0
+            }
+          },
+          "expected_delta": {
+            "overall_match": -0.07,
+            "direction": "-"
+          },
+          "evidence_requirements": {
+            "min_items_per_predicted_cluster": 2,
+            "require_source_attribution": true,
+            "expected_new_evidence_themes": {
+              "QD": [
+                "C++ backtesting engine",
+                "event-driven simulation",
+                "microsecond resolution",
+                "researcher collaboration to productionize models"
+              ],
+              "QR": [
+                "stochastic calculus / derivatives pricing coursework (aspirational signal)"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
