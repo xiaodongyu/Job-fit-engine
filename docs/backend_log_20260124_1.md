@@ -11,6 +11,8 @@ The most of the work is to design the evaluation methods and data set.
 
 Then I explored multiple ways to evaluate the backend components using the ChatGPT created data set. See the following documents for more details. 
 
+目前的情况是，我先把resume做了clustering，因为是事先指定好的固定cluster (role): MLE/DS/SWE/QD/QR，实际上是classification。然后用resume的cluster和对应的chunk去匹配JD的chuck,匹配用的是Gemini API做的，返回总体匹配分数和cluster匹配分数。我发现现在这种方法得到的总体匹配分数不合理，总是偏低，比如一个Resume_1_MLE_Enriched和JD_MLE_02_Amazon_GenAIIC匹配的时候总分只有0.225，但是cluster_matches: MLE 0.650, DS 0.150, SWE 0.100, QD 0.000告诉我们这个人还是比较匹配MLE的。现在的算法都是Cursor自己plan的，我需要再探索一下总体匹配的算法，让它更合理一些。
+
 ---
 
 ## Document Descriptions
