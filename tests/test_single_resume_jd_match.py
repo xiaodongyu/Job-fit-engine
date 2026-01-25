@@ -3,7 +3,7 @@
 Single resume–JD match test: upload resume, match to one JD, print debug (contents sent to Gemini) and results.
 
 Usage:
-  python scripts/test_single_resume_jd_match.py [--resume PATH] [--jd PATH] [--base-url URL]
+  python tests/test_single_resume_jd_match.py [--resume PATH] [--jd PATH] [--base-url URL]
 
 Defaults: Resume_1_MLE_Enriched.txt, JD_MLE_02_Amazon_GenAIIC.pdf.
 Backend must be running. JD can be PDF (parsed via PyMuPDF) or TXT.
@@ -17,10 +17,10 @@ import sys
 import uuid
 from pathlib import Path
 
-_SCRIPTS = Path(__file__).resolve().parent
-_PROJECT_ROOT = _SCRIPTS.parent
-if str(_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS))
+_TESTS = Path(__file__).resolve().parent
+_PROJECT_ROOT = _TESTS.parent
+if str(_TESTS) not in sys.path:
+    sys.path.insert(0, str(_TESTS))
 
 from qa_helpers import (
     health_check,
@@ -141,7 +141,7 @@ def main() -> int:
     ap.add_argument(
         "--resume", "-r",
         default="Resume_1_MLE_Enriched.txt",
-        help="Resume file (default: Resume_1_MLE_Enriched.txt under quant benchmark)",
+        help="Resume file (default: Resume_1_MLE_Enriched.txt under resume_cross_functional_role)",
     )
     ap.add_argument(
         "--jd", "-j",

@@ -4,15 +4,15 @@
 
 | Folder | Contents | Use |
 |--------|----------|-----|
-| [quant_cross_functional_role_fit_benchmark/](quant_cross_functional_role_fit_benchmark/) | 5 resumes (R1–R5), `Evaluation_Rubric_Role_Fit.txt` | Resume-only and augmentation inputs; role-fit rubric |
+| [resume_cross_functional_role/](resume_cross_functional_role/) | 5 resumes (R1–R5), `Evaluation_Rubric_Role_Fit.txt` | Resume-only and augmentation inputs; role-fit rubric |
 | [additional_materials_complement_resumes/](additional_materials_complement_resumes/) | 5 add-ons (1 per resume) | Augmentation; evidence provenance checks |
-| [senior_us_mixed_jds_pdf_bundle/](senior_us_mixed_jds_pdf_bundle/) | 10 JD PDFs, `jd_index.json` | Resume–JD match tests; JD metadata |
+| [jd_senior_us_mixed_roles/](jd_senior_us_mixed_roles/) | 10 JD PDFs, `jd_index.json` | Resume–JD match tests; JD metadata |
 | [qa_manifest_mapping/](qa_manifest_mapping/) | `qa_manifest.json` | Ground truth before/after, deltas, evidence themes, assertions, thresholds |
 | [qa_manifest_resume_jd_pairings/](qa_manifest_resume_jd_pairings/) | `qa_manifest_resume_jd_pairings.json` | Resume–JD pairings (resume-only), expected overall + per-cluster match |
 | [qa_manifest_resume_jd_pairings_two_phase/](qa_manifest_resume_jd_pairings_two_phase/) | `qa_manifest_resume_jd_pairings_two_phase.json` | Two-phase (resume_only vs resume_plus_addon) pairings and deltas |
 | [qa_manifest_resume_jd_pairings_two_phase_passfail/](qa_manifest_resume_jd_pairings_two_phase_passfail/) | `qa_manifest_resume_jd_pairings_two_phase.json` + `pass_fail_rule_set` | Pass/fail rules (global, phase, case-level) for automated harness |
 
-**Path resolution:** All manifest references (e.g. `resume_file`, `addon_file`, `jd_pdf`) resolve under `test_fixtures/` using the folder layout above (resumes in benchmark, addons in `additional_materials_complement_resumes/`, JDs in `senior_us_mixed_jds_pdf_bundle/`).
+**Path resolution:** All manifest references (e.g. `resume_file`, `addon_file`, `jd_pdf`) resolve under `test_fixtures/` using the folder layout above (resumes in benchmark, addons in `additional_materials_complement_resumes/`, JDs in `jd_senior_us_mixed_roles/`).
 
 ---
 
@@ -24,7 +24,7 @@
 
 **Steps per case (qa_manifest_mapping.test_cases):**
 
-1. Upload resume: `POST /resume/upload/json` with `text` from `quant_cross_functional_role_fit_benchmark/<resume_file>`.
+1. Upload resume: `POST /resume/upload/json` with `text` from `resume_cross_functional_role/<resume_file>`.
 2. Poll `GET /resume/status?upload_id=...` until `ready`.
 3. Call `POST /experience/cluster` with `session_id` only (or `session_id` + empty `items`).
 4. **Assert:**
@@ -71,7 +71,7 @@
 
 1. Reuse `session_id` from Phase 1 (resume-only, no addon).
 2. For each `expected_best_fit_jds[]` entry:
-   - Obtain JD text (e.g. from parsed `jd_pdf` in `senior_us_mixed_jds_pdf_bundle/`).
+   - Obtain JD text (e.g. from parsed `jd_pdf` in `jd_senior_us_mixed_roles/`).
    - `POST /analyze/match-by-cluster` with `session_id`, `use_curated_jd: false`, `jd_text: <parsed JD>`.
 3. **Assert:**
    - `overall_match_pct` within `tolerances.overall_match_abs_error` of `expected_overall_match`.
@@ -126,7 +126,7 @@
 
 ### Phase 6: Role-fit rubric (manual or LLM-as-judge)
 
-**Goal:** Use [Evaluation_Rubric_Role_Fit.txt](quant_cross_functional_role_fit_benchmark/Evaluation_Rubric_Role_Fit.txt) for qualitative scoring.
+**Goal:** Use [Evaluation_Rubric_Role_Fit.txt](resume_cross_functional_role/Evaluation_Rubric_Role_Fit.txt) for qualitative scoring.
 
 **Dimensions (0–5):** Primary role accuracy, secondary role ranking, evidence alignment, cross-functional sensitivity, career context awareness.
 
@@ -136,11 +136,11 @@
 
 ## 3. Implementation Artifacts
 
-- **Test runner:** Script or pytest suite under `scripts/` or `tests/` that:
+- **Test runner:** Script or pytest suite under `tests/` that:
   - Loads `qa_manifest_mapping`, `qa_manifest_resume_jd_pairings`, and two-phase (pass/fail) manifests.
   - Resolves paths to `test_fixtures/` subdirs.
   - Calls backend (upload, status poll, cluster, add-materials, match-by-cluster) per phase.
-  - Computes L1, deltas, and rule outcomes; writes a **QA report** (e.g. JSON + markdown summary).
+  - Computes L1, deltas, and rule outcomes; writes a **QA report** to `test_results/` (default) as `qa_report.json` and `qa_report.md`. Use `--output-dir` to override.
 - **JD handling:** Helper to parse JD PDFs (reuse `rag.parse_file` or equivalent) and optionally build `jd_index`-style metadata for ingest or jd_text lookup.
 - **Cluster distribution:** Helper to map `/experience/cluster` response (cluster labels + items/evidence) to a normalized distribution (e.g. by item count or evidence weight) for comparison to `ground_truth_before` / `ground_truth_after_target`.
 
@@ -205,7 +205,7 @@ flowchart TB
 |-------------|-------------|
 | **Testing plan doc** | This plan, stored in `test_fixtures/qa-testing-plan.md`. |
 | **Test runner** | Script or pytest that runs Phases 1–5, resolves paths from manifests, calls backend, evaluates rules, and produces a report. |
-| **QA report** | JSON + human-readable summary (pass/fail/warn per rule, L1/delta metrics, and any rubric scores if Phase 6 is included). |
+| **QA report** | `test_results/qa_report.json` and `test_results/qa_report.md` (default; use `--output-dir` to override). JSON + human-readable summary (pass/fail/warn per rule, L1/delta metrics, and any rubric scores if Phase 6 is included). |
 | **Path resolution** | Clear mapping from manifest `resume_file` / `addon_file` / `jd_pdf` to `test_fixtures/` paths. |
 
 ---

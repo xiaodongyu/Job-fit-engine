@@ -2,9 +2,9 @@
 
 ## Current vs ground truth
 
-**Current derivation** ([scripts/qa_helpers.py](../scripts/qa_helpers.py) `cluster_distribution_from_response`): We use **item counts per cluster**. Each skill/experience can be in multiple clusters; we add the same item to each cluster's `items` list. We then use `len(items)` per cluster and normalize by the **sum of all cluster sizes**. So we use **fraction of (item, cluster) pairs** per cluster. Items in more clusters contribute more to the total, which can distort the distribution.
+**Current derivation** ([tests/qa_helpers.py](../tests/qa_helpers.py) `cluster_distribution_from_response`): We use **item counts per cluster**. Each skill/experience can be in multiple clusters; we add the same item to each cluster's `items` list. We then use `len(items)` per cluster and normalize by the **sum of all cluster sizes**. So we use **fraction of (item, cluster) pairs** per cluster. Items in more clusters contribute more to the total, which can distort the distribution.
 
-**Ground truth** (e.g. [Resume_1_MLE_Enriched.txt](../test_fixtures/quant_cross_functional_role_fit_benchmark/Resume_1_MLE_Enriched.txt), [quant readme](../test_fixtures/quant_cross_functional_role_fit_benchmark/readme.md)): "Role-fit" distribution over MLE/DS/SWE/QR/QD that sums to 100%. Conceptually, each **resume item** (skill/experience) contributes to role fit, and that contribution is spread across the roles it applies to.
+**Ground truth** (e.g. [Resume_1_MLE_Enriched.txt](../test_fixtures/resume_cross_functional_role/Resume_1_MLE_Enriched.txt), [quant readme](../test_fixtures/resume_cross_functional_role/readme.md)): "Role-fit" distribution over MLE/DS/SWE/QR/QD that sums to 100%. Conceptually, each **resume item** (skill/experience) contributes to role fit, and that contribution is spread across the roles it applies to.
 
 **Revised rule (equal-split per item):** Each skill/experience has total weight **1.0**. Split it **evenly** across all clusters it is assigned to. Sum weights per cluster, then normalize to a distribution. So an item in 2 clusters adds 0.5 to each; an item in 1 cluster adds 1.0. Each resume item contributes equally overall; multi-label no longer over-weights.
 
@@ -40,7 +40,7 @@
 
 ### 3. Use `role_fit_distribution` when present
 
-**File:** [scripts/qa_helpers.py](../scripts/qa_helpers.py)
+**File:** [tests/qa_helpers.py](../tests/qa_helpers.py)
 
 - In `cluster_distribution_from_response`:
   - If the response has `role_fit_distribution` (and it's a non-empty dict), return that, normalized to the same keys as `CLUSTERS` (ensure all five clusters exist, missing → 0).
@@ -48,7 +48,7 @@
 
 ### 4. Test script and QA
 
-- [scripts/test_resume_only_clustering.py](../scripts/test_resume_only_clustering.py) and [scripts/run_qa.py](../scripts/run_qa.py) both use `cluster_distribution_from_response` (or equivalent). No changes needed there; they will automatically use the new derivation when the API returns `role_fit_distribution`.
+- [tests/test_resume_only_clustering.py](../tests/test_resume_only_clustering.py) and [tests/run_qa.py](../tests/run_qa.py) both use `cluster_distribution_from_response` (or equivalent). No changes needed there; they will automatically use the new derivation when the API returns `role_fit_distribution`.
 
 ### 5. Backward compatibility
 
@@ -64,11 +64,11 @@
 | `backend/rag.py` | Compute `role_fit_distribution` in `run_clustering` (equal-split); return it; store it in `save_clusters` payload. |
 | `backend/models.py` | Add `role_fit_distribution: Optional[dict[str, float]] = None` to `ClusterResponse`. |
 | `backend/main.py` | Pass `role_fit_distribution` from loaded clusters into `ClusterResponse`. |
-| `scripts/qa_helpers.py` | Prefer `role_fit_distribution` in `cluster_distribution_from_response` when present; else keep current logic. |
+| `tests/qa_helpers.py` | Prefer `role_fit_distribution` in `cluster_distribution_from_response` when present; else keep current logic. |
 
 ---
 
 ## Verification
 
-- Re-run resume-only clustering test: `python scripts/test_resume_only_clustering.py -r test_fixtures/quant_cross_functional_role_fit_benchmark/Resume_1_MLE_Enriched.txt`. Percentages should now follow the equal-split rule and may align better with ground truth (e.g. MLE 55%, SWE 25%, DS 15%) than the previous item-count derivation.
+- Re-run resume-only clustering test: `python tests/test_resume_only_clustering.py -r test_fixtures/resume_cross_functional_role/Resume_1_MLE_Enriched.txt`. Percentages should now follow the equal-split rule and may align better with ground truth (e.g. MLE 55%, SWE 25%, DS 15%) than the previous item-count derivation.
 - Run batch QA (Phase 1) and confirm L1 vs `ground_truth_before` uses the new distribution.

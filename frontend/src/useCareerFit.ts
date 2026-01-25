@@ -365,6 +365,7 @@ export function useCareerFit() {
   return {
     // State
     sessionId,
+    uploadId,
     step,
     setStep,
     stickers,

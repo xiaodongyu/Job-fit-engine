@@ -3,8 +3,8 @@ QA Manifest: Resume ↔ JD Pairings
 File: qa_manifest_resume_jd_pairings.json
 
 What this is:
-- For each synthetic resume in quant_cross_functional_role_fit_benchmark.zip, this manifest lists 2–3 expected best-fit job descriptions (JDs)
-  from senior_us_mixed_jds_pdf_bundle.zip.
+- For each synthetic resume in resume_cross_functional_role.zip, this manifest lists 2–3 expected best-fit job descriptions (JDs)
+  from jd_senior_us_mixed_roles.zip.
 - Includes target overall match scores and per-cluster match scores to support automated regression testing.
 
 How scores are computed (deterministic baseline):

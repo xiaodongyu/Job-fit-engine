@@ -5,7 +5,7 @@ I’ve created a **complete, evaluation-ready resume benchmark** that matches yo
 ## What’s included in the ZIP
 
 **Download:**
-[quant_cross_functional_role_fit_benchmark.zip](sandbox:/mnt/data/quant_cross_functional_role_fit_benchmark.zip)
+[resume_cross_functional_role.zip](resume_cross_functional_role.zip)
 
 ### 1) Five full-length, recruiter-grade resumes
 

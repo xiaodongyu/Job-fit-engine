@@ -2,7 +2,7 @@
 
 ## Goal
 
-Compute `role_fit_distribution` using the **GT method** ([role_percentage_comp_method.md](../test_fixtures/quant_cross_functional_role_fit_benchmark/role_percentage_comp_method.md)):
+Compute `role_fit_distribution` using the **GT method** ([role_percentage_comp_method.md](../test_fixtures/resume_cross_functional_role/role_percentage_comp_method.md)):
 
 - **Tier weights**: Tier-1 = 1.0, Tier-2 = 0.6, Tier-3 = 0.3 (per evidence–role pair).
 - **Ownership multipliers**: primary 1.0, parallel 0.8, earlier_career 0.7, add_on 0.6, coursework 0.4.
@@ -72,12 +72,12 @@ ClusteredGroups and evidence chunks are unchanged; only how we compute `role_fit
 
 ### 6. Verification
 
-- Run resume-only clustering: `python scripts/test_resume_only_clustering.py -r test_fixtures/quant_cross_functional_role_fit_benchmark/Resume_1_MLE_Enriched.txt`. Percentages should follow the GT formula (tier + ownership); may align better with GT (e.g. MLE 55%, SWE 25%, DS 15%).
+- Run resume-only clustering: `python tests/test_resume_only_clustering.py -r test_fixtures/resume_cross_functional_role/Resume_1_MLE_Enriched.txt`. Percentages should follow the GT formula (tier + ownership); may align better with GT (e.g. MLE 55%, SWE 25%, DS 15%).
 - Run batch QA Phase 1; confirm L1 vs `ground_truth_before` uses the new distribution.
 
 ### 7. Save plan to docs
 
-- This document lives at **`docs/gt-role-percentage-implementation-plan.md`**.
+- This document lives at **`docs/backend-gt-role-percentage-implementation-plan.md`**.
 - Contents: (1) link to role_percentage_comp_method.md, (2) summary of tier/ownership and formula, (3) implementation steps above, (4) verification commands.
 
 ---
@@ -88,7 +88,7 @@ ClusteredGroups and evidence chunks are unchanged; only how we compute `role_fit
 |------|--------|
 | [backend/prompts.py](../backend/prompts.py) | Extend CLUSTER_SYSTEM (tiers + ownership); extend CLUSTER_SCHEMA (`role_tiers`, `ownership`). |
 | [backend/rag.py](../backend/rag.py) | Add TIER_WEIGHT / OWNERSHIP_MULT; GT accumulation + normalize in `run_clustering`; fallback to equal-split; derive clusters from `role_tiers` when present. |
-| [docs/gt-role-percentage-implementation-plan.md](gt-role-percentage-implementation-plan.md) | This plan: GT method summary, implementation steps, verification. |
+| [docs/backend-gt-role-percentage-implementation-plan.md](backend-gt-role-percentage-implementation-plan.md) | This plan: GT method summary, implementation steps, verification. |
 
 ---
 

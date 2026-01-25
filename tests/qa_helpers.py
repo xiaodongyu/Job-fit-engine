@@ -1,5 +1,5 @@
 """
-QA helpers for the test plan in docs/qa-testing-plan.md.
+QA helpers for the test plan in test_fixtures/batch-qa-testing-plan.md.
 Path resolution, JD PDF parsing, API client, cluster distribution, L1/delta metrics.
 """
 from __future__ import annotations
@@ -12,13 +12,13 @@ from typing import Any
 
 import requests
 
-# Project root (parent of scripts/)
+# Project root (parent of tests/)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_ROOT = PROJECT_ROOT / "test_fixtures"
 
-BENCHMARK_DIR = FIXTURES_ROOT / "quant_cross_functional_role_fit_benchmark"
+BENCHMARK_DIR = FIXTURES_ROOT / "resume_cross_functional_role"
 ADDONS_DIR = FIXTURES_ROOT / "additional_materials_complement_resumes"
-JDS_DIR = FIXTURES_ROOT / "senior_us_mixed_jds_pdf_bundle"
+JDS_DIR = FIXTURES_ROOT / "jd_senior_us_mixed_roles"
 MAPPING_DIR = FIXTURES_ROOT / "qa_manifest_mapping"
 PAIRINGS_DIR = FIXTURES_ROOT / "qa_manifest_resume_jd_pairings"
 TWO_PHASE_DIR = FIXTURES_ROOT / "qa_manifest_resume_jd_pairings_two_phase"

@@ -1,6 +1,6 @@
 Done. I generated **10 senior-level, US-only job descriptions** (2 each for **MLE / SWE / DS / QD / QR**) using the **reconstructed-from-real-public-postings** approach, saved each as a **PDF**, and bundled everything into a single ZIP. The bundle also includes a **`jd_index.json`** with metadata and **ground-truth cluster demand vectors** for QA.
 
-**[Download the JD PDF bundle (ZIP)](sandbox:/mnt/data/senior_us_mixed_jds_pdf_bundle.zip)**
+**[Download the JD PDF bundle (ZIP)](jd_senior_us_mixed_roles.zip)**
 
 ### What’s inside
 

@@ -3,8 +3,8 @@
   "generated_date": "2026-01-24",
   "purpose": "Product QA: Expected best-fit JD pairings for each resume with target match scores.",
   "artifacts": {
-    "resume_bundle_zip": "quant_cross_functional_role_fit_benchmark.zip",
-    "jd_bundle_zip": "senior_us_mixed_jds_pdf_bundle.zip"
+    "resume_bundle_zip": "resume_cross_functional_role.zip",
+    "jd_bundle_zip": "jd_senior_us_mixed_roles.zip"
   },
   "scoring_model": "overall_match = 1 - L1_distance(cluster_vectors)/2; per_cluster_match = min(resume, jd)/jd for jd>0",
   "clusters": [

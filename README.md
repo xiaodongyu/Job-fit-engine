@@ -25,7 +25,7 @@ npm run dev
 
 Open http://localhost:3000 in your browser.
 
-**Testing with local files (resume, JD, additional materials):** Put them in **`test_fixtures/`** and run `./scripts/test-offline.sh -r test_fixtures/resume.pdf -j test_fixtures/jd.txt` (see [test_fixtures/README.md](test_fixtures/README.md) and [docs/testing-offline.md](docs/testing-offline.md)).
+**Testing with local files (resume, JD, additional materials):** Put them in **`test_fixtures/`** and run `./tests/test-offline.sh -r test_fixtures/resume.pdf -j test_fixtures/jd.txt` (see [test_fixtures/README.md](test_fixtures/README.md) and [test_fixtures/test_on_single_resume_jd.md](test_fixtures/test_on_single_resume_jd.md)).
 
 ## Architecture
 

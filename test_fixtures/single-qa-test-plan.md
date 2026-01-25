@@ -159,7 +159,7 @@ print(json.dumps({
 For the **upload + poll + analyze/fit** subset only (no cluster, no match-by-cluster), you can use the existing script with the same fixtures:
 
 ```bash
-./scripts/test-offline.sh -r test_fixtures/resume.txt -j test_fixtures/jd.txt -m test_fixtures/materials.txt
+./tests/test-offline.sh -r test_fixtures/resume.txt -j test_fixtures/jd.txt -m test_fixtures/materials.txt
 ```
 
 The full single plan above (steps 1–5, optional 6) remains curl-based and includes cluster + match-by-cluster.

@@ -128,9 +128,9 @@ If you prefer a single upload (no add-materials flow), concatenate resume + mate
 Use the helper script to run the full flow (upload → poll → analyze) from local files:
 
 ```bash
-./scripts/test-offline.sh -r test_fixtures/resume.pdf -j test_fixtures/jd.txt
+./tests/test-offline.sh -r test_fixtures/resume.pdf -j test_fixtures/jd.txt
 # With materials:
-./scripts/test-offline.sh -r test_fixtures/resume.pdf -j test_fixtures/jd.txt -m test_fixtures/materials.txt
+./tests/test-offline.sh -r test_fixtures/resume.pdf -j test_fixtures/jd.txt -m test_fixtures/materials.txt
 ```
 
 Specify paths with **`-r` / `--resume`**, **`-j` / `--jd`**, and optionally **`-m` / `--materials`**. Use `-h` or `--help` for usage.
