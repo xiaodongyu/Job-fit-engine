@@ -7,10 +7,11 @@
  * - Uses the useCareerFit hook for all state management
  */
 import { useCareerFit } from './useCareerFit';
+import type { CareerFitState } from './useCareerFit';
 import { StickerBoard, RoleSelector, AnalysisResults, ClusterView } from './steps';
 
 export default function App() {
-  const state = useCareerFit();
+  const state: CareerFitState = useCareerFit();
 
   return (
     <div className="app-container">
@@ -83,6 +84,8 @@ export default function App() {
             setJdSource={state.setJdSource}
             jdText={state.jdText}
             setJdText={state.setJdText}
+            linkedinUrl={state.linkedinUrl}
+            setLinkedinUrl={state.setLinkedinUrl}
             isAnalyzing={state.isAnalyzing}
             error={state.error}
             setStep={state.setStep}

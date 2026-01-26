@@ -4,7 +4,7 @@
 
 // === Step & Mode Types ===
 export type Step = 1 | 2 | 3 | 'cluster';
-export type JDSource = 'curated' | 'custom';
+export type JDSource = 'curated' | 'custom' | 'linkedin';
 export type UploadMode = 'stickers' | 'file';
 export type StickerLabel = 'work' | 'project' | 'internship' | 'skill' | 'metric' | 'education' | 'other';
 

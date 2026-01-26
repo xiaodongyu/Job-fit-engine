@@ -40,6 +40,7 @@ export function useCareerFit() {
   const [targetRole, setTargetRole] = useState<RoleType>('SWE');
   const [jdSource, setJdSource] = useState<JDSource>('custom');
   const [jdText, setJdText] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
 
   // === Step 3: Results ===
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -246,12 +247,13 @@ export function useCareerFit() {
     try {
       const useCurated = jdSource === 'curated';
       const jd = jdSource === 'custom' && jdText.trim() ? jdText : undefined;
+      const jdUrl = jdSource === 'linkedin' && linkedinUrl.trim() ? linkedinUrl.trim() : undefined;
 
-      if (!useCurated && !jd) {
+      if (!useCurated && !jd && !jdUrl) {
         throw new Error('Please provide a job description or use curated JDs');
       }
 
-      const result = await analyzeFit(sessionId, targetRole, useCurated, jd);
+      const result = await analyzeFit(sessionId, targetRole, useCurated, jd, jdUrl);
       setAnalysis(result);
       setStep(3);
     } catch (err) {
@@ -270,7 +272,8 @@ export function useCareerFit() {
     try {
       const useCurated = jdSource === 'curated';
       const jd = jdSource === 'custom' && jdText.trim() ? jdText : undefined;
-      const result = await generateResume(sessionId, targetRole, useCurated, jd);
+      const jdUrl = jdSource === 'linkedin' && linkedinUrl.trim() ? linkedinUrl.trim() : undefined;
+      const result = await generateResume(sessionId, targetRole, useCurated, jd, jdUrl);
       setGeneratedResume(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generation failed');
@@ -288,7 +291,8 @@ export function useCareerFit() {
     try {
       const useCurated = jdSource === 'curated';
       const jd = jdSource === 'custom' && jdText.trim() ? jdText : undefined;
-      const blob = await exportDocx(sessionId, targetRole, useCurated, jd);
+      const jdUrl = jdSource === 'linkedin' && linkedinUrl.trim() ? linkedinUrl.trim() : undefined;
+      const blob = await exportDocx(sessionId, targetRole, useCurated, jd, jdUrl);
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -315,6 +319,7 @@ export function useCareerFit() {
     setUploadId(null);
     setUploadStatus(null);
     setJdText('');
+    setLinkedinUrl('');
     setAnalysis(null);
     setGeneratedResume(null);
     setError(null);
@@ -383,6 +388,8 @@ export function useCareerFit() {
     setJdSource,
     jdText,
     setJdText,
+    linkedinUrl,
+    setLinkedinUrl,
     isAnalyzing,
     isGenerating,
     isExporting,
@@ -418,3 +425,5 @@ export function useCareerFit() {
     handleViewClusters,
   };
 }
+
+export type CareerFitState = ReturnType<typeof useCareerFit>;

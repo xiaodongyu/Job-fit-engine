@@ -11,6 +11,8 @@ interface RoleSelectorProps {
   setJdSource: (source: JDSource) => void;
   jdText: string;
   setJdText: (text: string) => void;
+  linkedinUrl: string;
+  setLinkedinUrl: (url: string) => void;
   isAnalyzing: boolean;
   error: string | null;
   setStep: (step: Step) => void;
@@ -24,11 +26,17 @@ export function RoleSelector({
   setJdSource,
   jdText,
   setJdText,
+  linkedinUrl,
+  setLinkedinUrl,
   isAnalyzing,
   error,
   setStep,
   handleAnalyze,
 }: RoleSelectorProps) {
+  const hasCustomJd = jdSource === 'custom' && jdText.trim().length > 0;
+  const hasLinkedInUrl = jdSource === 'linkedin' && linkedinUrl.trim().length > 0;
+  const disableAnalyze = isAnalyzing || (!hasCustomJd && !hasLinkedInUrl && jdSource !== 'curated');
+
   return (
     <div className="card">
       <h2><span className="icon">🎯</span> Select Target Role</h2>
@@ -83,6 +91,12 @@ export function RoleSelector({
         >
           Use Curated JDs
         </button>
+        <button
+          className={`toggle-option ${jdSource === 'linkedin' ? 'active' : ''}`}
+          onClick={() => setJdSource('linkedin')}
+        >
+          LinkedIn URL
+        </button>
       </div>
 
       {jdSource === 'custom' && (
@@ -102,6 +116,17 @@ export function RoleSelector({
         </div>
       )}
 
+      {jdSource === 'linkedin' && (
+        <div className="form-group">
+          <input
+            type="url"
+            placeholder="Paste LinkedIn job posting URL..."
+            value={linkedinUrl}
+            onChange={(e) => setLinkedinUrl(e.target.value)}
+          />
+        </div>
+      )}
+
       {error && <div className="error">{error}</div>}
 
       <div className="btn-group">
@@ -111,7 +136,7 @@ export function RoleSelector({
         <button
           className="btn btn-primary"
           onClick={handleAnalyze}
-          disabled={isAnalyzing || (jdSource === 'custom' && !jdText.trim())}
+          disabled={disableAnalyze}
         >
           {isAnalyzing ? 'Analyzing...' : 'Analyze Fit →'}
         </button>
