@@ -870,10 +870,99 @@ input[type="file"] {
   margin-bottom: 1.5rem;
 }
 
+.parsed-blocks {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.parsed-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.parsed-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.parsed-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.parsed-type {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.parsed-header {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.parsed-detail {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.block-stickers {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
 .sticker-add-row {
   display: flex;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
+}
+
+.sticker-target {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.sticker-target label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.sticker-target select {
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+}
+
+.new-block-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.new-block-fields input {
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
 }
 
 .sticker-input {
@@ -1038,6 +1127,12 @@ input[type="file"] {
 .sticker-text:focus {
   outline: none;
   border-color: var(--accent-primary);
+}
+
+.sticker-meta {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 /* Empty Board */

@@ -16,6 +16,7 @@ from models import (
     HealthResponse, UploadStatus,
     ClusterRequest, ClusterResponse, ClusteredGroup, ExperienceItem,
     MatchByClusterRequest, MatchByClusterResponse, ClusterMatch,
+    ResumeStructuredResponse, ResumeInputStructured,
 )
 from prompts import (
     ROLE_FIT_SYSTEM, ROLE_FIT_SCHEMA,
@@ -127,6 +128,18 @@ async def resume_status(upload_id: str = Query(...)):
         upload_id=upload_id,
         status=status_info["status"],
         detail=status_info.get("detail", "")
+    )
+
+
+@app.get("/resume/structured", response_model=ResumeStructuredResponse)
+async def resume_structured(session_id: str = Query(...)):
+    """Get structured resume blocks extracted from upload."""
+    structured = rag.load_resume_structured(session_id)
+    if not structured:
+        raise HTTPException(status_code=404, detail=f"No structured resume for session {session_id}")
+    return ResumeStructuredResponse(
+        session_id=session_id,
+        structured=ResumeInputStructured(**structured)
     )
 
 

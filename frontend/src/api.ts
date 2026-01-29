@@ -20,6 +20,52 @@ export interface ResumeUploadResponse {
   upload_id: string;
 }
 
+export interface ResumeExperienceBlock {
+  block_id: string;
+  company?: string | null;
+  title?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  bullets: string[];
+  skills_tags: string[];
+  ownership?: string | null;
+}
+
+export interface ResumeProjectBlock {
+  block_id: string;
+  name?: string | null;
+  role?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  bullets: string[];
+  skills_tags: string[];
+  ownership?: string | null;
+}
+
+export interface ResumeEducationBlock {
+  block_id: string;
+  school?: string | null;
+  degree?: string | null;
+  field?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  bullets: string[];
+}
+
+export interface ResumeStructuredInput {
+  experiences: ResumeExperienceBlock[];
+  projects: ResumeProjectBlock[];
+  education: ResumeEducationBlock[];
+}
+
+export interface ResumeStructuredResponse {
+  session_id: string;
+  structured: ResumeStructuredInput;
+}
+
 export interface ResumeStatusResponse {
   upload_id: string;
   status: UploadStatus;
@@ -104,6 +150,24 @@ export async function uploadResumeText(text: string, sessionId?: string): Promis
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, session_id: sessionId })
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// Get structured resume blocks
+export async function getResumeStructured(sessionId: string): Promise<ResumeStructuredResponse> {
+  const res = await fetch(`${API_BASE}/resume/structured?session_id=${encodeURIComponent(sessionId)}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// Add resume materials (text) to existing session
+export async function addResumeMaterialsText(sessionId: string, text: string): Promise<ResumeUploadResponse> {
+  const res = await fetch(`${API_BASE}/resume/materials/add/json`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId, text })
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();

@@ -7,6 +7,7 @@ export type Step = 1 | 2 | 3 | 'cluster';
 export type JDSource = 'curated' | 'custom';
 export type UploadMode = 'stickers' | 'file';
 export type StickerLabel = 'work' | 'project' | 'internship' | 'skill' | 'metric' | 'education' | 'other';
+export type ResumeBlockType = 'experience' | 'project' | 'education';
 
 // === Sticker Interface ===
 export interface Sticker {
@@ -14,6 +15,25 @@ export interface Sticker {
   label: StickerLabel;
   text: string;
   active: boolean;
+  blockId?: string;
+  blockType?: ResumeBlockType;
+}
+
+export interface ResumeBlock {
+  id: string;
+  type: ResumeBlockType;
+  header: string;
+  company?: string;
+  title?: string;
+  name?: string;
+  role?: string;
+  school?: string;
+  degree?: string;
+  field?: string;
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  source?: string;
 }
 
 // === Constants ===

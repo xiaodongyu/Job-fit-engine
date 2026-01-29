@@ -1,5 +1,6 @@
 """RAG utilities: parsing, chunking, embedding, FAISS index management."""
 import os
+import re
 import json
 import uuid
 import threading
@@ -26,6 +27,9 @@ from prompts import (
     CLUSTER_SCHEMA,
     build_cluster_prompt,
     CLUSTER_LABELS,
+  RESUME_STRUCTURE_SYSTEM,
+  RESUME_STRUCTURE_SCHEMA,
+  build_resume_structure_prompt,
 )
 
 import gemini_client
@@ -258,6 +262,7 @@ def load_metadata(path: Path) -> list[dict]:
 
 
 RESUME_RAW_FILENAME = "resume_raw.txt"
+RESUME_STRUCTURED_FILENAME = "resume_structured.json"
 EXTRACTION_FILENAME = "extraction.json"
 CLUSTERS_FILENAME = "clusters.json"
 
@@ -274,6 +279,10 @@ def _clusters_path(session_id: str) -> Path:
     return get_session_dir(session_id) / CLUSTERS_FILENAME
 
 
+def _resume_structured_path(session_id: str) -> Path:
+    return get_session_dir(session_id) / RESUME_STRUCTURED_FILENAME
+
+
 def save_resume_raw(session_id: str, text: str) -> None:
     path = _resume_raw_path(session_id)
     path.write_text(text, encoding="utf-8")
@@ -284,6 +293,327 @@ def load_resume_raw(session_id: str) -> Optional[str]:
     if path.exists():
         return path.read_text(encoding="utf-8")
     return None
+
+
+def save_resume_structured(session_id: str, data: dict) -> None:
+    path = _resume_structured_path(session_id)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def load_resume_structured(session_id: str) -> Optional[dict]:
+    path = _resume_structured_path(session_id)
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
+def _clean_list(value) -> list[str]:
+    if not value:
+        return []
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    return [str(value).strip()] if str(value).strip() else []
+
+
+def _attach_block_ids(items: list[dict], prefix: str) -> list[dict]:
+    out = []
+    for item in items:
+        block_id = item.get("block_id") or f"{prefix}_{uuid.uuid4().hex[:8]}"
+        item["block_id"] = block_id
+        out.append(item)
+    return out
+
+
+def _coerce_structured(content: dict) -> dict:
+    experiences = content.get("experiences") if isinstance(content.get("experiences"), list) else []
+    projects = content.get("projects") if isinstance(content.get("projects"), list) else []
+    education = content.get("education") if isinstance(content.get("education"), list) else []
+
+    def normalize_exp(item: dict) -> dict:
+        return {
+            "block_id": item.get("block_id"),
+            "company": item.get("company"),
+            "title": item.get("title"),
+            "location": item.get("location"),
+            "start_date": item.get("start_date"),
+            "end_date": item.get("end_date"),
+            "bullets": _clean_list(item.get("bullets")),
+            "skills_tags": _clean_list(item.get("skills_tags")),
+            "ownership": item.get("ownership"),
+        }
+
+    def normalize_proj(item: dict) -> dict:
+        return {
+            "block_id": item.get("block_id"),
+            "name": item.get("name"),
+            "role": item.get("role"),
+            "location": item.get("location"),
+            "start_date": item.get("start_date"),
+            "end_date": item.get("end_date"),
+            "bullets": _clean_list(item.get("bullets")),
+            "skills_tags": _clean_list(item.get("skills_tags")),
+            "ownership": item.get("ownership"),
+        }
+
+    def normalize_edu(item: dict) -> dict:
+        return {
+            "block_id": item.get("block_id"),
+            "school": item.get("school"),
+            "degree": item.get("degree"),
+            "field": item.get("field"),
+            "location": item.get("location"),
+            "start_date": item.get("start_date"),
+            "end_date": item.get("end_date"),
+            "bullets": _clean_list(item.get("bullets")),
+        }
+
+    structured = {
+        "experiences": _attach_block_ids([normalize_exp(i) for i in experiences], "exp"),
+        "projects": _attach_block_ids([normalize_proj(i) for i in projects], "proj"),
+        "education": _attach_block_ids([normalize_edu(i) for i in education], "edu"),
+    }
+    return structured
+
+
+def _strip_noise_sections(lines: list[str]) -> list[str]:
+    """Remove known non-resume sections like role-fit scores."""
+    cleaned = []
+    skip = False
+    for ln in lines:
+        upper = ln.upper()
+        if upper.startswith("GROUND-TRUTH ROLE FIT") or upper.startswith("ROLE FIT"):
+            skip = True
+            continue
+        if skip and re.match(r"^-?\s*(MLE|SWE|DS|QD|QR)\s*:", ln, re.IGNORECASE):
+            continue
+        if skip and ln.strip() == "":
+            skip = False
+            continue
+        if skip and upper.startswith("SUMMARY"):
+            skip = False
+        if skip:
+            continue
+        cleaned.append(ln)
+    return cleaned
+
+
+def _looks_like_experience_header(line: str) -> bool:
+    # Examples: "Senior ML Engineer — Company | 2020–Present"
+    return bool(re.search(r"—.*\|\s*\d{4}", line)) or bool(re.search(r"\b\d{4}\s*[–-]\s*(Present|\d{4})", line, re.IGNORECASE))
+
+
+def _heuristic_structured(text: str) -> dict:
+    raw_lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
+    lines = _strip_noise_sections(raw_lines)
+    blocks = []
+    current = None
+    in_education = False
+
+    for ln in lines:
+        upper = ln.upper()
+        if upper.startswith("EDUCATION"):
+            if current:
+                blocks.append(current)
+                current = None
+            in_education = True
+            continue
+
+        if in_education:
+            blocks.append({
+                "block_id": f"edu_{uuid.uuid4().hex[:8]}",
+                "school": None,
+                "degree": ln,
+                "field": None,
+                "location": None,
+                "start_date": None,
+                "end_date": None,
+                "bullets": [],
+            })
+            continue
+
+        if _looks_like_experience_header(ln):
+            if current:
+                blocks.append(current)
+            current = {
+                "block_id": f"exp_{uuid.uuid4().hex[:8]}",
+                "company": None,
+                "title": None,
+                "location": None,
+                "start_date": None,
+                "end_date": None,
+                "bullets": [],
+                "skills_tags": [],
+                "ownership": None,
+            }
+            current["_header"] = ln
+            continue
+
+        if current and ln.startswith(("-", "•", "*")):
+            current["bullets"].append(ln.lstrip("-•* ").strip())
+        elif current:
+            # continuation of previous bullet
+            if current["bullets"]:
+                current["bullets"][-1] += f" {ln}"
+
+    if current:
+        blocks.append(current)
+
+    experiences = [b for b in blocks if b.get("block_id", "").startswith("exp_")]
+    education = [b for b in blocks if b.get("block_id", "").startswith("edu_")]
+    if not experiences and not education:
+        bullets = [ln.lstrip("-•* ").strip() for ln in lines if ln.startswith(("-", "•", "*"))]
+        if not bullets:
+            bullets = lines[:10]
+        experiences = [{
+            "block_id": f"exp_{uuid.uuid4().hex[:8]}",
+            "company": None,
+            "title": None,
+            "location": None,
+            "start_date": None,
+            "end_date": None,
+            "bullets": bullets,
+            "skills_tags": [],
+            "ownership": None,
+        }]
+
+    return {
+        "experiences": experiences,
+        "projects": [],
+        "education": education,
+    }
+
+
+def extract_resume_structure(text: str) -> dict:
+    """Extract structured experiences/projects/education from resume text."""
+    try:
+        prompt = build_resume_structure_prompt(text)
+        result = gemini_client.generate(RESUME_STRUCTURE_SYSTEM, prompt, RESUME_STRUCTURE_SCHEMA)
+        content = result.get("content") or {}
+        if isinstance(content, str):
+            content = {}
+        structured = _coerce_structured(content)
+        has_blocks = any(structured.get(k) for k in ("experiences", "projects", "education"))
+        return structured if has_blocks else _heuristic_structured(text)
+    except Exception:
+        return _heuristic_structured(text)
+
+
+def _format_date_range(start: Optional[str], end: Optional[str]) -> Optional[str]:
+    if start and end:
+        return f"{start}–{end}"
+    return start or end
+
+
+def _build_header(kind: str, block: dict) -> str:
+    if kind == "experience":
+        parts = [block.get("company"), block.get("title"), block.get("location")]
+        date_part = _format_date_range(block.get("start_date"), block.get("end_date"))
+        if date_part:
+            parts.append(date_part)
+        return " | ".join([p for p in parts if p]) or "EXPERIENCE"
+    if kind == "project":
+        parts = [block.get("name"), block.get("role"), block.get("location")]
+        date_part = _format_date_range(block.get("start_date"), block.get("end_date"))
+        if date_part:
+            parts.append(date_part)
+        return " | ".join([p for p in parts if p]) or "PROJECT"
+    if kind == "education":
+        parts = [block.get("school"), block.get("degree"), block.get("field"), block.get("location")]
+        date_part = _format_date_range(block.get("start_date"), block.get("end_date"))
+        if date_part:
+            parts.append(date_part)
+        return " | ".join([p for p in parts if p]) or "EDUCATION"
+    return "RESUME"
+
+
+def _chunk_block_with_header(
+    block: dict,
+    kind: str,
+    max_chars: int,
+    overlap: int,
+) -> tuple[list[str], list[dict]]:
+    header = _build_header(kind, block)
+    bullets = _clean_list(block.get("bullets"))
+    tags = _clean_list(block.get("skills_tags"))
+    ownership = block.get("ownership")
+
+    body_lines = []
+    if ownership:
+        body_lines.append(f"Ownership: {ownership}")
+    if tags:
+        body_lines.append("Tags: " + ", ".join(tags))
+    for b in bullets:
+        body_lines.append(f"- {b}")
+
+    body = "\n".join(body_lines).strip()
+    block_id = block.get("block_id") or f"{kind}_{uuid.uuid4().hex[:8]}"
+
+    chunks = []
+    meta = []
+    if not body:
+        chunk_id = f"{block_id}__{kind}__0"
+        chunks.append(header)
+        meta.append({
+            "chunk_id": chunk_id,
+            "text": header,
+            "source_type": "resume",
+            "session_id": None,
+            "block_id": block_id,
+            "block_type": kind,
+            "sub_index": 0,
+            "header": header,
+        })
+        return chunks, meta
+
+    available = max(200, max_chars - len(header) - 2)
+    start = 0
+    idx = 0
+    while start < len(body):
+        end = min(len(body), start + available)
+        segment = body[start:end].strip()
+        text = f"{header}\n{segment}"
+        chunk_id = f"{block_id}__{kind}__{idx}"
+        chunks.append(text)
+        meta.append({
+            "chunk_id": chunk_id,
+            "text": text,
+            "source_type": "resume",
+            "session_id": None,
+            "block_id": block_id,
+            "block_type": kind,
+            "sub_index": idx,
+            "header": header,
+        })
+        idx += 1
+        if end >= len(body):
+            break
+        start = max(0, end - overlap)
+
+    return chunks, meta
+
+
+def chunk_structured_resume(structured: dict) -> tuple[list[str], list[dict]]:
+    max_chars = int(os.getenv("BLOCK_CHUNK_SIZE", "1200"))
+    overlap = int(os.getenv("BLOCK_CHUNK_OVERLAP", "150"))
+    chunks: list[str] = []
+    meta: list[dict] = []
+
+    for exp in structured.get("experiences", []) or []:
+        c, m = _chunk_block_with_header(exp, "experience", max_chars, overlap)
+        chunks.extend(c)
+        meta.extend(m)
+    for proj in structured.get("projects", []) or []:
+        c, m = _chunk_block_with_header(proj, "project", max_chars, overlap)
+        chunks.extend(c)
+        meta.extend(m)
+    for edu in structured.get("education", []) or []:
+        c, m = _chunk_block_with_header(edu, "education", max_chars, overlap)
+        chunks.extend(c)
+        meta.extend(m)
+
+    return chunks, meta
 
 
 def save_extraction(session_id: str, data: dict) -> None:
@@ -552,25 +882,43 @@ def _run_full_pipeline(upload_id: str, session_id: str, text: str) -> None:
     index_path = session_dir / "resume.index"
     meta_path = session_dir / "resume_meta.json"
 
-    update_upload_status(upload_id, UploadStatus.CHUNKING, "Splitting text into chunks...")
-    chunks = chunk_text(text)
+    update_upload_status(upload_id, UploadStatus.PARSING, "Extracting structured resume blocks...")
+    structured = extract_resume_structure(text)
+    save_resume_structured(session_id, structured)
+
+    update_upload_status(upload_id, UploadStatus.CHUNKING, "Chunking structured blocks...")
+    chunks, meta = chunk_structured_resume(structured)
     if not chunks:
-        update_upload_status(upload_id, UploadStatus.ERROR, "No text content found")
-        return
+        update_upload_status(upload_id, UploadStatus.CHUNKING, "Falling back to sliding-window chunking...")
+        chunks = chunk_text(text)
+        meta = [
+            {
+                "chunk_id": f"resume_{session_id}_{i}",
+                "text": chunk,
+                "source_type": "resume",
+                "session_id": session_id,
+                "chunk_index": i,
+            }
+            for i, chunk in enumerate(chunks)
+        ]
+    else:
+        for i, m in enumerate(meta):
+            m["session_id"] = session_id
+            m["chunk_index"] = i
 
     update_upload_status(upload_id, UploadStatus.EMBEDDING, f"Embedding {len(chunks)} chunks...")
     embeddings = gemini_client.embed_texts(chunks)
     embeddings_np = np.array(embeddings, dtype=np.float32)
 
-    meta = []
     for i, chunk in enumerate(chunks):
-        meta.append({
-            "chunk_id": f"resume_{session_id}_{i}",
-            "text": chunk,
-            "source_type": "resume",
-            "session_id": session_id,
-            "chunk_index": i,
-        })
+        if i >= len(meta):
+            meta.append({
+                "chunk_id": f"resume_{session_id}_{i}",
+                "text": chunk,
+                "source_type": "resume",
+                "session_id": session_id,
+                "chunk_index": i,
+            })
 
     update_upload_status(upload_id, UploadStatus.INDEXING, "Building search index...")
     dim = embeddings_np.shape[1]

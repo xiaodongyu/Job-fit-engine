@@ -99,6 +99,87 @@ RESUME_GENERATE_SCHEMA = {
 }
 
 
+# === Resume Structure Extraction (Input Stage) ===
+RESUME_STRUCTURE_SYSTEM = """You are a resume parser that extracts structured sections.
+
+CRITICAL RULES:
+1. Extract ONLY what is present in the provided resume text. Do NOT invent.
+2. Preserve structure: each experience/project/education must be a separate block.
+3. Bullets must remain associated with the correct block.
+4. If a field is unknown, use null. If no bullets are present, use an empty list.
+5. Dates may be partial (YYYY or YYYY-MM). Keep as raw strings.
+6. Ignore role-fit scores, percentages, and meta-analysis sections (e.g., "GROUND-TRUTH ROLE FIT").
+
+Return JSON matching the schema exactly."""
+
+RESUME_STRUCTURE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "experiences": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "company": {"type": ["string", "null"]},
+                    "title": {"type": ["string", "null"]},
+                    "location": {"type": ["string", "null"]},
+                    "start_date": {"type": ["string", "null"]},
+                    "end_date": {"type": ["string", "null"]},
+                    "bullets": {"type": "array", "items": {"type": "string"}},
+                    "skills_tags": {"type": "array", "items": {"type": "string"}},
+                    "ownership": {"type": ["string", "null"]}
+                },
+                "required": ["company", "title", "location", "start_date", "end_date", "bullets", "skills_tags", "ownership"]
+            }
+        },
+        "projects": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": ["string", "null"]},
+                    "role": {"type": ["string", "null"]},
+                    "location": {"type": ["string", "null"]},
+                    "start_date": {"type": ["string", "null"]},
+                    "end_date": {"type": ["string", "null"]},
+                    "bullets": {"type": "array", "items": {"type": "string"}},
+                    "skills_tags": {"type": "array", "items": {"type": "string"}},
+                    "ownership": {"type": ["string", "null"]}
+                },
+                "required": ["name", "role", "location", "start_date", "end_date", "bullets", "skills_tags", "ownership"]
+            }
+        },
+        "education": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "school": {"type": ["string", "null"]},
+                    "degree": {"type": ["string", "null"]},
+                    "field": {"type": ["string", "null"]},
+                    "location": {"type": ["string", "null"]},
+                    "start_date": {"type": ["string", "null"]},
+                    "end_date": {"type": ["string", "null"]},
+                    "bullets": {"type": "array", "items": {"type": "string"}}
+                },
+                "required": ["school", "degree", "field", "location", "start_date", "end_date", "bullets"]
+            }
+        }
+    },
+    "required": ["experiences", "projects", "education"]
+}
+
+
+def build_resume_structure_prompt(resume_text: str) -> str:
+    """Build user prompt for structured resume extraction."""
+    return f"""=== RESUME TEXT ===
+{resume_text}
+
+Extract structured blocks for experiences, projects, and education.
+Preserve bullet groupings under the correct block.
+Return JSON matching the schema."""
+
+
 def build_fit_prompt(
     resume_chunks: list[dict],
     jd_chunks: list[dict],

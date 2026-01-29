@@ -78,6 +78,53 @@ class ResumeStatusResponse(BaseModel):
     detail: str = ""
 
 
+# === Structured Resume Input ===
+class ResumeExperienceBlock(BaseModel):
+    block_id: str
+    company: Optional[str] = None
+    title: Optional[str] = None
+    location: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    bullets: list[str] = []
+    skills_tags: list[str] = []
+    ownership: Optional[str] = None
+
+
+class ResumeProjectBlock(BaseModel):
+    block_id: str
+    name: Optional[str] = None
+    role: Optional[str] = None
+    location: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    bullets: list[str] = []
+    skills_tags: list[str] = []
+    ownership: Optional[str] = None
+
+
+class ResumeEducationBlock(BaseModel):
+    block_id: str
+    school: Optional[str] = None
+    degree: Optional[str] = None
+    field: Optional[str] = None
+    location: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    bullets: list[str] = []
+
+
+class ResumeInputStructured(BaseModel):
+    experiences: list[ResumeExperienceBlock] = []
+    projects: list[ResumeProjectBlock] = []
+    education: list[ResumeEducationBlock] = []
+
+
+class ResumeStructuredResponse(BaseModel):
+    session_id: str
+    structured: ResumeInputStructured
+
+
 # === Evidence Chunk ===
 class EvidenceChunk(BaseModel):
     chunk_id: str

@@ -5,7 +5,9 @@ import { useState, useEffect, useRef } from 'react';
 import {
   uploadResumeText,
   uploadResumeFile,
-  getResumeStatus,
+  addResumeMaterialsText,
+  getResumeStructured,
+  waitForResumeReady,
   analyzeFit,
   generateResume,
   exportDocx,
@@ -18,6 +20,7 @@ import {
   RoleType,
 } from './api';
 import { Step, JDSource, UploadMode, Sticker, StickerLabel, generateId } from './types';
+import type { ResumeBlock, ResumeBlockType } from './types';
 
 export function useCareerFit() {
   // === Session Management ===
@@ -31,6 +34,7 @@ export function useCareerFit() {
   const [pastedResumeText, setPastedResumeText] = useState('');
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [uploadMode, setUploadMode] = useState<UploadMode>('stickers');
+  const [resumeBlocks, setResumeBlocks] = useState<ResumeBlock[]>([]);
 
   // === Upload State ===
   const [isUploading, setIsUploading] = useState(false);
@@ -59,7 +63,6 @@ export function useCareerFit() {
 
   // === Refs ===
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pollIntervalRef = useRef<number | null>(null);
 
   // === Computed Values ===
   const activeCount = stickers.filter(s => s.active).length;
@@ -94,39 +97,170 @@ export function useCareerFit() {
     localStorage.setItem('career_fit_pasted_text', pastedResumeText);
   }, [pastedResumeText]);
 
-  useEffect(() => {
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-    };
-  }, []);
-
   // === Sticker Handlers ===
-  const addSticker = (text: string, label: StickerLabel = 'other') => {
+  const addSticker = (
+    text: string,
+    label: StickerLabel = 'other',
+    blockId?: string,
+    blockType?: ResumeBlockType
+  ) => {
     if (!text.trim()) return;
     const newSticker: Sticker = {
       id: generateId(),
       label,
       text: text.trim(),
-      active: true
+      active: true,
+      blockId,
+      blockType
     };
     setStickers(prev => [...prev, newSticker]);
   };
 
-  const handleAddStickerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleAddStickerKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    options?: { label?: StickerLabel; blockId?: string; blockType?: ResumeBlockType }
+  ) => {
     if (e.key === 'Enter' && newStickerText.trim()) {
-      addSticker(newStickerText);
+      addSticker(
+        newStickerText,
+        options?.label ?? 'other',
+        options?.blockId,
+        options?.blockType
+      );
       setNewStickerText('');
     }
   };
 
-  const handleMultiLinePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const handleMultiLinePaste = (
+    e: React.ClipboardEvent<HTMLTextAreaElement>,
+    options?: { label?: StickerLabel; blockId?: string; blockType?: ResumeBlockType }
+  ) => {
     const text = e.clipboardData.getData('text');
     const lines = text.split('\n').filter(line => line.trim());
     if (lines.length > 1) {
       e.preventDefault();
-      lines.forEach(line => addSticker(line));
+      lines.forEach(line => addSticker(
+        line,
+        options?.label ?? 'other',
+        options?.blockId,
+        options?.blockType
+      ));
+    }
+  };
+  const formatBlockHeader = (block: ResumeBlock): string => {
+    const datePart = block.startDate && block.endDate
+      ? `${block.startDate}–${block.endDate}`
+      : (block.startDate || block.endDate);
+
+    if (block.type === 'experience') {
+      return [block.company, block.title, block.location, datePart].filter(Boolean).join(' | ') || 'Experience';
+    }
+    if (block.type === 'project') {
+      return [block.name, block.role, block.location, datePart].filter(Boolean).join(' | ') || 'Project';
+    }
+    return [block.school, block.degree, block.field, block.location, datePart].filter(Boolean).join(' | ') || 'Education';
+  };
+
+  const addResumeBlock = (block: Omit<ResumeBlock, 'id' | 'header'>): string => {
+    const id = generateId();
+    const fullBlock: ResumeBlock = {
+      ...block,
+      id,
+      header: formatBlockHeader({ ...block, id, header: '' })
+    };
+    setResumeBlocks(prev => [...prev, fullBlock]);
+    return id;
+  };
+
+  const applyStructuredBlocks = (structured: {
+    experiences: Array<{ block_id: string; company?: string | null; title?: string | null; location?: string | null; start_date?: string | null; end_date?: string | null; bullets?: string[] | null; }>;
+    projects: Array<{ block_id: string; name?: string | null; role?: string | null; location?: string | null; start_date?: string | null; end_date?: string | null; bullets?: string[] | null; }>;
+    education: Array<{ block_id: string; school?: string | null; degree?: string | null; field?: string | null; location?: string | null; start_date?: string | null; end_date?: string | null; bullets?: string[] | null; }>;
+  }) => {
+    const blocks: ResumeBlock[] = [];
+    const parsedStickers: Sticker[] = [];
+    structured.experiences.forEach(exp => {
+      const block: ResumeBlock = {
+        id: exp.block_id,
+        type: 'experience',
+        company: exp.company || undefined,
+        title: exp.title || undefined,
+        location: exp.location || undefined,
+        startDate: exp.start_date || undefined,
+        endDate: exp.end_date || undefined,
+        header: '',
+        source: 'parsed'
+      };
+      block.header = formatBlockHeader(block);
+      blocks.push(block);
+      (exp.bullets || []).forEach(bullet => {
+        if (!bullet?.trim()) return;
+        parsedStickers.push({
+          id: generateId(),
+          label: 'work',
+          text: bullet.trim(),
+          active: true,
+          blockId: block.id,
+          blockType: block.type
+        });
+      });
+    });
+    structured.projects.forEach(proj => {
+      const block: ResumeBlock = {
+        id: proj.block_id,
+        type: 'project',
+        name: proj.name || undefined,
+        role: proj.role || undefined,
+        location: proj.location || undefined,
+        startDate: proj.start_date || undefined,
+        endDate: proj.end_date || undefined,
+        header: '',
+        source: 'parsed'
+      };
+      block.header = formatBlockHeader(block);
+      blocks.push(block);
+      (proj.bullets || []).forEach(bullet => {
+        if (!bullet?.trim()) return;
+        parsedStickers.push({
+          id: generateId(),
+          label: 'project',
+          text: bullet.trim(),
+          active: true,
+          blockId: block.id,
+          blockType: block.type
+        });
+      });
+    });
+    structured.education.forEach(edu => {
+      const block: ResumeBlock = {
+        id: edu.block_id,
+        type: 'education',
+        school: edu.school || undefined,
+        degree: edu.degree || undefined,
+        field: edu.field || undefined,
+        location: edu.location || undefined,
+        startDate: edu.start_date || undefined,
+        endDate: edu.end_date || undefined,
+        header: '',
+        source: 'parsed'
+      };
+      block.header = formatBlockHeader(block);
+      blocks.push(block);
+      (edu.bullets || []).forEach(bullet => {
+        if (!bullet?.trim()) return;
+        parsedStickers.push({
+          id: generateId(),
+          label: 'education',
+          text: bullet.trim(),
+          active: true,
+          blockId: block.id,
+          blockType: block.type
+        });
+      });
+    });
+    setResumeBlocks(blocks);
+    if (parsedStickers.length > 0) {
+      setStickers(parsedStickers);
     }
   };
 
@@ -149,7 +283,13 @@ export function useCareerFit() {
 
     if (activeStickers.length > 0) {
       combined += '[STICKERS]\n';
-      combined += activeStickers.map(s => `- (${s.label}) ${s.text.trim()}`).join('\n');
+      combined += activeStickers.map(s => {
+        const header = s.blockId
+          ? resumeBlocks.find(b => b.id === s.blockId)?.header
+          : undefined;
+        const prefix = header ? `[${header}] ` : '';
+        return `- (${s.label}) ${prefix}${s.text.trim()}`;
+      }).join('\n');
     }
 
     if (pastedResumeText.trim()) {
@@ -161,35 +301,37 @@ export function useCareerFit() {
   };
 
   const hasContent = (): boolean => {
-    if (uploadMode === 'file') {
-      return !!resumeFile;
-    }
-    return stickers.some(s => s.active) || pastedResumeText.trim().length > 0;
+    return !!resumeFile || stickers.some(s => s.active) || pastedResumeText.trim().length > 0;
   };
 
-  // === Polling ===
-  const pollStatus = async (uid: string) => {
+  const fetchStructuredBlocks = async (sid: string) => {
     try {
-      const status = await getResumeStatus(uid);
-      setUploadStatus(status);
-
-      if (status.status === 'ready') {
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current);
-          pollIntervalRef.current = null;
-        }
-        setIsUploading(false);
-        setStep(2);
-      } else if (status.status === 'error') {
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current);
-          pollIntervalRef.current = null;
-        }
-        setIsUploading(false);
-        setError(status.detail || 'Processing failed');
-      }
+      const structured = await getResumeStructured(sid);
+      applyStructuredBlocks(structured.structured);
     } catch (err) {
-      console.error('Status poll error:', err);
+      console.error('Failed to fetch structured resume:', err);
+    }
+  };
+
+  const uploadAndParseFile = async (file: File) => {
+    setError(null);
+    setIsUploading(true);
+    setUploadStatus(null);
+    try {
+      const result = await uploadResumeFile(file);
+      setSessionId(result.session_id);
+      setUploadId(result.upload_id);
+
+      const status = await waitForResumeReady(result.upload_id, setUploadStatus);
+      if (status.status === 'error') {
+        throw new Error(status.detail || 'Processing failed');
+      }
+
+      await fetchStructuredBlocks(result.session_id);
+      setIsUploading(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload resume');
+      setIsUploading(false);
     }
   };
 
@@ -199,6 +341,7 @@ export function useCareerFit() {
     if (file) {
       setResumeFile(file);
       setUploadMode('file');
+      uploadAndParseFile(file);
     }
   };
 
@@ -209,26 +352,51 @@ export function useCareerFit() {
     setUploadStatus(null);
 
     try {
-      let result;
+      const combinedText = packStickersAndText();
+      const hasText = combinedText.trim().length > 0;
+      const hasFile = !!resumeFile;
 
-      if (uploadMode === 'file' && resumeFile) {
-        result = await uploadResumeFile(resumeFile);
-      } else {
-        const combinedText = packStickersAndText();
-        if (!combinedText.trim()) {
-          throw new Error('Please add some stickers or paste resume text');
-        }
-        result = await uploadResumeText(combinedText);
+      if (!hasText && !hasFile) {
+        throw new Error('Please add some stickers, paste resume text, or upload a file');
       }
 
-      setSessionId(result.session_id);
-      setUploadId(result.upload_id);
+      let result;
+      if (hasFile && resumeFile && !sessionId) {
+        result = await uploadResumeFile(resumeFile);
+        setSessionId(result.session_id);
+        setUploadId(result.upload_id);
 
-      pollIntervalRef.current = window.setInterval(() => {
-        pollStatus(result.upload_id);
-      }, 1000);
+        const firstStatus = await waitForResumeReady(result.upload_id, setUploadStatus);
+        if (firstStatus.status === 'error') {
+          throw new Error(firstStatus.detail || 'Processing failed');
+        }
+      } else if (!hasFile) {
+        result = await uploadResumeText(combinedText);
+        setSessionId(result.session_id);
+        setUploadId(result.upload_id);
 
-      pollStatus(result.upload_id);
+        const firstStatus = await waitForResumeReady(result.upload_id, setUploadStatus);
+        if (firstStatus.status === 'error') {
+          throw new Error(firstStatus.detail || 'Processing failed');
+        }
+      } else {
+        result = { session_id: sessionId, upload_id: uploadId };
+      }
+
+      if (hasText && result?.session_id) {
+        const addResult = await addResumeMaterialsText(result.session_id, combinedText);
+        setUploadId(addResult.upload_id);
+        const addStatus = await waitForResumeReady(addResult.upload_id, setUploadStatus);
+        if (addStatus.status === 'error') {
+          throw new Error(addStatus.detail || 'Processing failed');
+        }
+      }
+
+      if (result?.session_id) {
+        await fetchStructuredBlocks(result.session_id);
+      }
+
+      setIsUploading(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload resume');
       setIsUploading(false);
@@ -306,10 +474,6 @@ export function useCareerFit() {
   };
 
   const handleStartOver = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
     setStep(1);
     setSessionId(null);
     setUploadId(null);
@@ -318,6 +482,7 @@ export function useCareerFit() {
     setAnalysis(null);
     setGeneratedResume(null);
     setError(null);
+    setResumeBlocks([]);
     localStorage.removeItem('career_fit_session');
   };
 
@@ -325,6 +490,7 @@ export function useCareerFit() {
     setStickers([]);
     setPastedResumeText('');
     setResumeFile(null);
+    setResumeBlocks([]);
     localStorage.removeItem('career_fit_stickers');
     localStorage.removeItem('career_fit_pasted_text');
   };
@@ -340,7 +506,9 @@ export function useCareerFit() {
         .map(s => ({
           id: s.id,
           label: s.label,
-          text: s.text,
+          text: s.blockId
+            ? `[${resumeBlocks.find(b => b.id === s.blockId)?.header || 'Section'}] ${s.text}`
+            : s.text,
           source: 'sticker'
         }));
 
@@ -397,6 +565,7 @@ export function useCareerFit() {
     isClustering,
     clusterResult,
     activeCount,
+    resumeBlocks,
 
     // Refs
     fileInputRef,
@@ -405,6 +574,7 @@ export function useCareerFit() {
     addSticker,
     handleAddStickerKeyDown,
     handleMultiLinePaste,
+    addResumeBlock,
     updateSticker,
     deleteSticker,
     toggleStickerActive,

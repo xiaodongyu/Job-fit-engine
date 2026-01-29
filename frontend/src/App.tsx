@@ -47,13 +47,9 @@ export default function App() {
         {state.step === 1 && (
           <StickerBoard
             stickers={state.stickers}
-            newStickerText={state.newStickerText}
-            setNewStickerText={state.setNewStickerText}
             pastedResumeText={state.pastedResumeText}
             setPastedResumeText={state.setPastedResumeText}
             resumeFile={state.resumeFile}
-            uploadMode={state.uploadMode}
-            setUploadMode={state.setUploadMode}
             isUploading={state.isUploading}
             uploadStatus={state.uploadStatus}
             error={state.error}
@@ -61,9 +57,10 @@ export default function App() {
             sessionId={state.sessionId}
             isClustering={state.isClustering}
             fileInputRef={state.fileInputRef}
+            resumeBlocks={state.resumeBlocks}
+            setStep={state.setStep}
             addSticker={state.addSticker}
-            handleAddStickerKeyDown={state.handleAddStickerKeyDown}
-            handleMultiLinePaste={state.handleMultiLinePaste}
+            addResumeBlock={state.addResumeBlock}
             updateSticker={state.updateSticker}
             deleteSticker={state.deleteSticker}
             toggleStickerActive={state.toggleStickerActive}
