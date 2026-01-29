@@ -90,3 +90,15 @@ Backend CORS is already `allow_origins=["*"]`, so the Vercel frontend origin is 
 | Frontend API | `frontend/src/api.ts` (use `VITE_API_BASE`) |
 | Backend deps | `backend/requirements.txt` (`faiss-cpu==1.9.0.post1`) |
 | Docs | `docs/deployment_log.md` (this file) |
+
+---
+
+## 8. Post-commit: going live
+
+Summary of what was done **after** the "prepare for deployment" commit (backend branch merged to main, then pushed):
+
+1. **Push to fork** — Pushed `main` to the **fork** remote (`git push fork main`) so Render could pull the latest code (including the `faiss-cpu==1.9.0.post1` fix).
+2. **Backend redeploy on Render** — Triggered a new deploy on Render (e.g. from the latest push to `main`, or via Manual Deploy). Build took several minutes (normal for `pip install` with heavier deps); deployment succeeded.
+3. **Wire frontend to backend** — In Vercel → frontend project → Settings → Environment Variables, set **`VITE_API_BASE`** to the Render service URL (no trailing slash). Redeployed the frontend so the production build uses that URL.
+4. **Frontend deployment** — Frontend redeploy on Vercel succeeded.
+5. **Outcome** — The app is now accessible from a **public URL** (Vercel frontend) instead of localhost; production frontend talks to the Render backend. First request after backend sleep (free tier) may take 30–60 seconds to wake the service.
