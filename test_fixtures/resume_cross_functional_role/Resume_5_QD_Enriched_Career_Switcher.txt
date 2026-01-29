@@ -1,0 +1,36 @@
+NAME: Daniel Kim
+LOCATION: Chicago, IL
+
+PRIMARY ROLE TARGET: Quantitative Developer (QD)
+CAREER TYPE: Career Switcher / Explorer
+
+GROUND-TRUTH ROLE FIT
+- QD: 45%
+- SWE: 25%
+- QR: 15%
+- DS: 10%
+- MLE: 5%
+
+SUMMARY
+Quantitative Developer transitioning from traditional software engineering into
+finance-focused quantitative systems. Combines strong engineering skills with growing
+quantitative and financial modeling expertise.
+
+CORE SKILLS
+Python, C++, Numerical Methods, Financial Modeling,
+Backtesting Systems, Data Engineering
+
+EXPERIENCE
+
+Quantitative Developer — Prop Trading Firm | 2021–Present
+- Built backtesting frameworks and research tooling for quant researchers.
+- Implemented pricing models and simulation engines.
+- Optimized compute-heavy workloads in Python and C++.
+
+Senior Software Engineer — Enterprise Software Co. | 2016–2021
+- Led development of large-scale data processing systems.
+- Mentored engineers on performance optimization and clean architecture.
+
+EDUCATION
+B.S. Computer Science
+Certificate in Quantitative Finance

@@ -1,0 +1,33 @@
+NAME: Elena Petrova
+LOCATION: New York, NY
+
+PRIMARY ROLE TARGET: Quantitative Researcher (QR)
+
+GROUND-TRUTH ROLE FIT
+- QR: 55%
+- DS: 20%
+- QD: 15%
+- SWE: 5%
+- MLE: 5%
+
+SUMMARY
+Quantitative Researcher with a strong background in statistical modeling, stochastic
+processes, and machine learning applied to financial markets.
+
+CORE SKILLS
+Probability Theory, Statistical Modeling, Python, Research Pipelines,
+Time Series Analysis, Machine Learning
+
+EXPERIENCE
+
+Senior Quantitative Researcher — Hedge Fund | 2019–Present
+- Developed alpha models using time series and cross-sectional data.
+- Researched signal robustness and risk characteristics.
+- Collaborated with quant developers to productionize research models.
+
+Data Scientist — Financial Services Co. | 2016–2019
+- Built predictive models for credit risk and portfolio optimization.
+- Applied ML techniques to structured financial datasets.
+
+EDUCATION
+Ph.D. Applied Mathematics

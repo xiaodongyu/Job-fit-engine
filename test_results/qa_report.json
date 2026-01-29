@@ -1,0 +1,586 @@
+{
+  "base_url": "http://localhost:8000",
+  "phases_enabled": [
+    1,
+    3
+  ],
+  "phase1": [
+    {
+      "resume_id": "R1_MLE_Enriched",
+      "session_id": "qa_R1_MLE_Enriched_resume_only",
+      "l1_overall": 0.32303664921465974,
+      "l1_primary": 0.03429319371727757,
+      "distribution": {
+        "MLE": 0.5157068062827225,
+        "DS": 0.3115183246073298,
+        "SWE": 0.14136125654450263,
+        "QR": 0.0,
+        "QD": 0.031413612565445025
+      },
+      "ground_truth": {
+        "MLE": 0.55,
+        "DS": 0.15,
+        "SWE": 0.25,
+        "QR": 0.0,
+        "QD": 0.05
+      },
+      "passed": true,
+      "error": null
+    },
+    {
+      "resume_id": "R2_DS_Enriched",
+      "session_id": "qa_R2_DS_Enriched_resume_only",
+      "l1_overall": 0.338865836791148,
+      "l1_primary": 0.16943291839557395,
+      "distribution": {
+        "MLE": 0.16459197786998617,
+        "DS": 0.669432918395574,
+        "SWE": 0.12448132780082988,
+        "QR": 0.0,
+        "QD": 0.04149377593360996
+      },
+      "ground_truth": {
+        "MLE": 0.2,
+        "DS": 0.5,
+        "SWE": 0.15,
+        "QR": 0.1,
+        "QD": 0.05
+      },
+      "passed": true,
+      "error": null
+    },
+    {
+      "resume_id": "R3_SWE_Enriched",
+      "session_id": "qa_R3_SWE_Enriched_resume_only",
+      "l1_overall": 0.25822784810126587,
+      "l1_primary": 0.012658227848101333,
+      "distribution": {
+        "MLE": 0.16455696202531644,
+        "DS": 0.018987341772151896,
+        "SWE": 0.48734177215189867,
+        "QR": 0.06329113924050632,
+        "QD": 0.26582278481012656
+      },
+      "ground_truth": {
+        "MLE": 0.2,
+        "DS": 0.1,
+        "SWE": 0.5,
+        "QR": 0.05,
+        "QD": 0.15
+      },
+      "passed": true,
+      "error": null
+    },
+    {
+      "resume_id": "R4_QR_Enriched",
+      "session_id": "qa_R4_QR_Enriched_resume_only",
+      "l1_overall": 0.28148148148148155,
+      "l1_primary": 0.04629629629629639,
+      "distribution": {
+        "MLE": 0.044444444444444446,
+        "DS": 0.34074074074074073,
+        "SWE": 0.044444444444444446,
+        "QR": 0.5037037037037037,
+        "QD": 0.06666666666666667
+      },
+      "ground_truth": {
+        "MLE": 0.05,
+        "DS": 0.2,
+        "SWE": 0.05,
+        "QR": 0.55,
+        "QD": 0.15
+      },
+      "passed": true,
+      "error": null
+    },
+    {
+      "resume_id": "R5_QD_Switcher",
+      "session_id": "qa_R5_QD_Switcher_resume_only",
+      "l1_overall": 0.30431654676259,
+      "l1_primary": 0.06151079136690646,
+      "distribution": {
+        "MLE": 0.0,
+        "DS": 0.06474820143884892,
+        "SWE": 0.2446043165467626,
+        "QR": 0.30215827338129503,
+        "QD": 0.38848920863309355
+      },
+      "ground_truth": {
+        "MLE": 0.05,
+        "DS": 0.1,
+        "SWE": 0.25,
+        "QR": 0.15,
+        "QD": 0.45
+      },
+      "passed": true,
+      "error": null
+    }
+  ],
+  "phase2": [],
+  "phase3": [
+    {
+      "resume_id": "R1_MLE_Enriched",
+      "session_id": "qa_R1_MLE_Enriched_resume_only",
+      "matches": [
+        {
+          "jd_id": "JD_MLE_01_Amazon_TrainingInfra",
+          "expected_overall": 0.85,
+          "actual_overall": 0.3,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.65
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.15
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.0
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_MLE_02_Amazon_GenAIIC",
+          "expected_overall": 0.8,
+          "actual_overall": 0.125,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.5
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.0
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_SWE_02_Amazon_Neuron_DistributedTraining",
+          "expected_overall": 0.55,
+          "actual_overall": 0.2,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.4
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.0
+            }
+          ],
+          "error": null
+        }
+      ],
+      "passed": false
+    },
+    {
+      "resume_id": "R2_DS_Enriched",
+      "session_id": "qa_R2_DS_Enriched_resume_only",
+      "matches": [
+        {
+          "jd_id": "JD_DS_02_Microsoft_SeniorDataScientist_MediaOptimization",
+          "expected_overall": 0.85,
+          "actual_overall": 0.45,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.3
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.75
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.05
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.0
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_DS_01_Amazon_SeniorDataScientist_DML",
+          "expected_overall": 0.8,
+          "actual_overall": 0.3,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.3
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.7
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.1
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.0
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_MLE_01_Amazon_TrainingInfra",
+          "expected_overall": 0.4,
+          "actual_overall": 0.27,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.5
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.15
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.1
+            }
+          ],
+          "error": null
+        }
+      ],
+      "passed": false
+    },
+    {
+      "resume_id": "R3_SWE_Enriched",
+      "session_id": "qa_R3_SWE_Enriched_resume_only",
+      "matches": [
+        {
+          "jd_id": "JD_SWE_02_Amazon_Neuron_DistributedTraining",
+          "expected_overall": 0.8,
+          "actual_overall": 0.31,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.7
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.15
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_SWE_01_Google_DistributedCloud",
+          "expected_overall": 0.75,
+          "actual_overall": 0.3,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.3
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.7
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.0
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+          "expected_overall": 0.5,
+          "actual_overall": 0.2,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.1
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.4
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.1
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.2
+            }
+          ],
+          "error": null
+        }
+      ],
+      "passed": false
+    },
+    {
+      "resume_id": "R4_QR_Enriched",
+      "session_id": "qa_R4_QR_Enriched_resume_only",
+      "matches": [
+        {
+          "jd_id": "JD_QR_01_TwoSigma_QuantResearcher_Experienced",
+          "expected_overall": 0.85,
+          "actual_overall": 0.3,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.65
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.0
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_QR_02_Citadel_QuantResearch_Profile",
+          "expected_overall": 0.8,
+          "actual_overall": 0.3,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.6
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.1
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+          "expected_overall": 0.35,
+          "actual_overall": 0.26,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "MLE",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "DS",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.55
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.0
+            }
+          ],
+          "error": null
+        }
+      ],
+      "passed": false
+    },
+    {
+      "resume_id": "R5_QD_Switcher",
+      "session_id": "qa_R5_QD_Switcher_resume_only",
+      "matches": [
+        {
+          "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+          "expected_overall": 0.85,
+          "actual_overall": 0.3,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "DS",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.6
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_QD_02_Citadel_QuantDeveloper_Profile",
+          "expected_overall": 0.85,
+          "actual_overall": 0.35,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "DS",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.6
+            }
+          ],
+          "error": null
+        },
+        {
+          "jd_id": "JD_QR_01_TwoSigma_QuantResearcher_Experienced",
+          "expected_overall": 0.4,
+          "actual_overall": 0.25,
+          "overall_ok": false,
+          "per_cluster_ok": false,
+          "cluster_matches": [
+            {
+              "cluster": "DS",
+              "match_pct": 0.0
+            },
+            {
+              "cluster": "SWE",
+              "match_pct": 0.1
+            },
+            {
+              "cluster": "QR",
+              "match_pct": 0.2
+            },
+            {
+              "cluster": "QD",
+              "match_pct": 0.4
+            }
+          ],
+          "error": null
+        }
+      ],
+      "passed": false
+    }
+  ],
+  "phase4": [],
+  "phase5_rules": [],
+  "errors": []
+}

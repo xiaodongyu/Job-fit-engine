@@ -1,0 +1,8 @@
+ADDITIONAL MATERIAL – TRANSITION PORTFOLIO
+Candidate: Daniel Kim
+
+Portfolio Highlights:
+- Built C++ backtesting engine supporting intraday strategies.
+- Implemented event-driven simulation with microsecond resolution.
+- Completed coursework in stochastic calculus and derivatives pricing.
+- Actively collaborating with researchers to productionize models.

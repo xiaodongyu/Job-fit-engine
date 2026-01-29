@@ -1,0 +1,24 @@
+ROLE-FIT EVALUATION RUBRIC
+
+Objective:
+Evaluate whether a system correctly identifies primary and secondary role fit
+for candidates with cross-functional experience.
+
+Scoring Dimensions (0–5 each):
+
+1. Primary Role Accuracy
+- Correct identification of highest-probability role
+
+2. Secondary Role Ranking
+- Correct ordering of secondary roles by relevance
+
+3. Evidence Alignment
+- Explanations grounded in resume evidence
+
+4. Cross-Functional Sensitivity
+- Avoids collapsing candidate into a single role
+
+5. Career Context Awareness
+- Correct handling of career switcher / explorer signals
+
+Overall Score = Average of dimensions

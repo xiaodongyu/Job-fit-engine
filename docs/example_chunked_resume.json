@@ -1,0 +1,29 @@
+{
+  "session_id": "demo1234",
+  "chunks": [
+    {
+      "chunk_id": "exp_a1b2c3d4__experience__0",
+      "block_id": "exp_a1b2c3d4",
+      "block_type": "experience",
+      "sub_index": 0,
+      "header": "Acme Corp | Machine Learning Engineer | New York, NY | 2020-01–2023-06",
+      "text": "Acme Corp | Machine Learning Engineer | New York, NY | 2020-01–2023-06\n- Built a training pipeline that reduced model deployment time by 35%\n- Deployed a real-time inference service using FastAPI and Kubernetes\nTags: Python, TensorFlow, MLOps"
+    },
+    {
+      "chunk_id": "proj_9f8e7d6c__project__0",
+      "block_id": "proj_9f8e7d6c",
+      "block_type": "project",
+      "sub_index": 0,
+      "header": "Forecasting Platform | Lead Developer | 2022-03–2022-12",
+      "text": "Forecasting Platform | Lead Developer | 2022-03–2022-12\n- Built time-series models for demand forecasting\n- Implemented automated feature pipelines and model monitoring\nTags: Pandas, Airflow"
+    },
+    {
+      "chunk_id": "edu_1122aabb__education__0",
+      "block_id": "edu_1122aabb",
+      "block_type": "education",
+      "sub_index": 0,
+      "header": "State University | B.S. Computer Science | 2016–2020",
+      "text": "State University | B.S. Computer Science | 2016–2020\n- Dean's List, GPA 3.8"
+    }
+  ]
+}

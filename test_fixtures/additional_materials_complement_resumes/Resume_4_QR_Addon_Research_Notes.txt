@@ -1,0 +1,10 @@
+ADDITIONAL MATERIAL – RESEARCH NOTES
+Candidate: Elena Petrova
+
+Research Focus:
+- Developed mean-reversion and momentum signals across equity universes.
+- Tested robustness under transaction costs and regime shifts.
+- Applied Bayesian shrinkage techniques to reduce overfitting.
+
+Outcome:
+- Signals approved for paper trading after 12-month validation.

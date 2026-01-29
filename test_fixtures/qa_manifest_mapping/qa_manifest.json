@@ -1,0 +1,279 @@
+{
+  "manifest_version": "1.0",
+  "purpose": "Product QA: resume parsing, clustering (MLE/DS/SWE/QR/QD), resume\u2194JD matching, and supplemental-material augmentation.",
+  "clusters": [
+    "MLE",
+    "DS",
+    "SWE",
+    "QR",
+    "QD"
+  ],
+  "artifacts": {
+    "resume_bundle_zip": "resume_cross_functional_role.zip",
+    "addon_bundle_zip": "additional_materials_complement_resumes.zip"
+  },
+  "global_thresholds": {
+    "evidence": {
+      "min_items_per_predicted_cluster": 2,
+      "require_verbatim_quote_spans": true,
+      "require_source_attribution": true,
+      "allowed_sources": [
+        "resume",
+        "addon"
+      ]
+    },
+    "distribution_metrics": {
+      "max_L1_error_primary_cluster": 0.2,
+      "max_L1_error_overall": 0.4
+    },
+    "augmentation": {
+      "expected_delta_min": 0.05,
+      "max_unexpected_delta": 0.08,
+      "require_delta_explanation": true
+    }
+  },
+  "test_cases": [
+    {
+      "resume_id": "R1_MLE_Enriched",
+      "resume_file": "Resume_1_MLE_Enriched.txt",
+      "addon_id": "A1_MLE_Project_Notes",
+      "addon_file": "Resume_1_MLE_Addon_Project_Notes.txt",
+      "ground_truth_before": {
+        "MLE": 0.55,
+        "SWE": 0.25,
+        "DS": 0.15,
+        "QD": 0.05,
+        "QR": 0.0
+      },
+      "expected_delta": {
+        "directional": {
+          "MLE": "+",
+          "SWE": "+",
+          "DS": "~",
+          "QD": "~",
+          "QR": "~"
+        },
+        "min_increase": {
+          "MLE": 0.07,
+          "SWE": 0.03
+        },
+        "max_increase_other": 0.08
+      },
+      "ground_truth_after_target": {
+        "MLE": 0.62,
+        "SWE": 0.26,
+        "DS": 0.1,
+        "QD": 0.02,
+        "QR": 0.0
+      },
+      "expected_new_evidence": {
+        "MLE": [
+          "feature store",
+          "MLflow model versioning/rollback",
+          "Kubernetes deployment/autoscaling",
+          "inference latency optimization"
+        ]
+      },
+      "qa_assertions": [
+        "Predicted MLE remains top-1 cluster after augmentation.",
+        "At least 2 MLE evidence items come from addon source.",
+        "System cites exact phrases from addon for feature store / MLflow / Kubernetes.",
+        "No large increase (>max_unexpected_delta) in QR or QD."
+      ]
+    },
+    {
+      "resume_id": "R2_DS_Enriched",
+      "resume_file": "Resume_2_DS_Enriched.txt",
+      "addon_id": "A2_DS_Publication_Summary",
+      "addon_file": "Resume_2_DS_Addon_Publication_Summary.txt",
+      "ground_truth_before": {
+        "DS": 0.5,
+        "MLE": 0.2,
+        "SWE": 0.15,
+        "QR": 0.1,
+        "QD": 0.05
+      },
+      "expected_delta": {
+        "directional": {
+          "DS": "+",
+          "QR": "+",
+          "MLE": "~",
+          "SWE": "~",
+          "QD": "~"
+        },
+        "min_increase": {
+          "DS": 0.06,
+          "QR": 0.03
+        },
+        "max_increase_other": 0.08
+      },
+      "ground_truth_after_target": {
+        "DS": 0.58,
+        "MLE": 0.16,
+        "SWE": 0.12,
+        "QR": 0.12,
+        "QD": 0.02
+      },
+      "expected_new_evidence": {
+        "DS": [
+          "difference-in-differences",
+          "synthetic control",
+          "price elasticity under policy changes",
+          "business impact attribution"
+        ],
+        "QR": [
+          "applied research framing (but not alpha research)"
+        ]
+      },
+      "qa_assertions": [
+        "Predicted DS remains top-1 cluster after augmentation.",
+        "System increases DS score by at least expected_delta_min.",
+        "QR may increase modestly, but must not overtake DS.",
+        "Evidence must distinguish causal inference (DS) from market alpha research (QR)."
+      ]
+    },
+    {
+      "resume_id": "R3_SWE_Enriched",
+      "resume_file": "Resume_3_SWE_Enriched.txt",
+      "addon_id": "A3_SWE_System_Design",
+      "addon_file": "Resume_3_SWE_Addon_System_Design.txt",
+      "ground_truth_before": {
+        "SWE": 0.5,
+        "MLE": 0.2,
+        "QD": 0.15,
+        "DS": 0.1,
+        "QR": 0.05
+      },
+      "expected_delta": {
+        "directional": {
+          "SWE": "+",
+          "QD": "+",
+          "MLE": "~",
+          "DS": "~",
+          "QR": "~"
+        },
+        "min_increase": {
+          "SWE": 0.06,
+          "QD": 0.03
+        },
+        "max_increase_other": 0.08
+      },
+      "ground_truth_after_target": {
+        "SWE": 0.58,
+        "MLE": 0.17,
+        "QD": 0.17,
+        "DS": 0.06,
+        "QR": 0.02
+      },
+      "expected_new_evidence": {
+        "SWE": [
+          "architecture review",
+          "fault-tolerant processing/backpressure",
+          "events/sec throughput",
+          "latency SLA integration"
+        ]
+      },
+      "qa_assertions": [
+        "Predicted SWE remains top-1 cluster after augmentation.",
+        "At least 2 SWE evidence items come from addon source.",
+        "QD can increase slightly due to infra/latency signals but must not exceed SWE.",
+        "QR must not increase materially."
+      ]
+    },
+    {
+      "resume_id": "R4_QR_Enriched",
+      "resume_file": "Resume_4_QR_Enriched.txt",
+      "addon_id": "A4_QR_Research_Notes",
+      "addon_file": "Resume_4_QR_Addon_Research_Notes.txt",
+      "ground_truth_before": {
+        "QR": 0.55,
+        "DS": 0.2,
+        "QD": 0.15,
+        "SWE": 0.05,
+        "MLE": 0.05
+      },
+      "expected_delta": {
+        "directional": {
+          "QR": "+",
+          "QD": "~",
+          "DS": "~",
+          "SWE": "~",
+          "MLE": "~"
+        },
+        "min_increase": {
+          "QR": 0.06
+        },
+        "max_increase_other": 0.08
+      },
+      "ground_truth_after_target": {
+        "QR": 0.63,
+        "DS": 0.18,
+        "QD": 0.13,
+        "SWE": 0.03,
+        "MLE": 0.03
+      },
+      "expected_new_evidence": {
+        "QR": [
+          "signal robustness under transaction costs/regime shifts",
+          "Bayesian shrinkage / overfitting control",
+          "paper trading validation"
+        ]
+      },
+      "qa_assertions": [
+        "Predicted QR remains top-1 cluster after augmentation.",
+        "Evidence should include quant-research hallmarks: signals, costs, regimes, validation.",
+        "System must not confuse QR research notes with generic DS modeling."
+      ]
+    },
+    {
+      "resume_id": "R5_QD_Switcher",
+      "resume_file": "Resume_5_QD_Enriched_Career_Switcher.txt",
+      "addon_id": "A5_QD_Transition_Portfolio",
+      "addon_file": "Resume_5_QD_Addon_Transition_Portfolio.txt",
+      "ground_truth_before": {
+        "QD": 0.45,
+        "SWE": 0.25,
+        "QR": 0.15,
+        "DS": 0.1,
+        "MLE": 0.05
+      },
+      "expected_delta": {
+        "directional": {
+          "QD": "+",
+          "SWE": "~/-",
+          "QR": "+",
+          "DS": "~",
+          "MLE": "~"
+        },
+        "min_increase": {
+          "QD": 0.07,
+          "QR": 0.02
+        },
+        "max_increase_other": 0.08
+      },
+      "ground_truth_after_target": {
+        "QD": 0.55,
+        "SWE": 0.22,
+        "QR": 0.16,
+        "DS": 0.05,
+        "MLE": 0.02
+      },
+      "expected_new_evidence": {
+        "QD": [
+          "C++ backtesting engine",
+          "event-driven simulation",
+          "microsecond resolution",
+          "researcher collaboration to productionize models"
+        ],
+        "QR": [
+          "stochastic calculus / derivatives pricing coursework (aspirational signal)"
+        ]
+      },
+      "qa_assertions": [
+        "QD should strengthen; SWE may remain strong but should not grow materially.",
+        "System should explicitly label some QR-related coursework as 'supplemental' or 'learning' unless professional QR evidence exists.",
+        "Evidence must be attributed to addon source for backtesting engine and simulation."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,174 @@
+{
+  "index_version": "1.0",
+  "generated_date": "2026-01-24",
+  "notes": "These job descriptions are reconstructed (paraphrased and normalized) from public postings to support product QA. They are not verbatim copies.",
+  "clusters": [
+    "MLE",
+    "DS",
+    "SWE",
+    "QR",
+    "QD"
+  ],
+  "items": [
+    {
+      "jd_id": "JD_MLE_01_Amazon_TrainingInfra",
+      "pdf_file": "JD_MLE_01_Amazon_TrainingInfra.pdf",
+      "role": "MLE",
+      "company": "Amazon",
+      "location": "United States (role location varies by team)",
+      "seniority": "Senior",
+      "source": "https://www.amazon.jobs/en/jobs/2668768/sr-machine-learning-engineer",
+      "cluster_demand": {
+        "MLE": 0.7,
+        "SWE": 0.25,
+        "DS": 0.05,
+        "QD": 0.0,
+        "QR": 0.0
+      }
+    },
+    {
+      "jd_id": "JD_MLE_02_Amazon_GenAIIC",
+      "pdf_file": "JD_MLE_02_Amazon_GenAIIC.pdf",
+      "role": "MLE",
+      "company": "Amazon (AWS)",
+      "location": "United States (multiple hubs)",
+      "seniority": "Senior",
+      "source": "https://www.amazon.jobs/jobs/2921687",
+      "cluster_demand": {
+        "MLE": 0.75,
+        "SWE": 0.15,
+        "DS": 0.1,
+        "QD": 0.0,
+        "QR": 0.0
+      }
+    },
+    {
+      "jd_id": "JD_SWE_01_Google_DistributedCloud",
+      "pdf_file": "JD_SWE_01_Google_DistributedCloud.pdf",
+      "role": "SWE",
+      "company": "Google",
+      "location": "United States (multiple locations)",
+      "seniority": "Senior",
+      "source": "https://careers.google.com/jobs/results/143949380548731590-senior-software-engineer/",
+      "cluster_demand": {
+        "SWE": 0.75,
+        "MLE": 0.1,
+        "DS": 0.1,
+        "QD": 0.05,
+        "QR": 0.0
+      }
+    },
+    {
+      "jd_id": "JD_SWE_02_Amazon_Neuron_DistributedTraining",
+      "pdf_file": "JD_SWE_02_Amazon_Neuron_DistributedTraining.pdf",
+      "role": "SWE",
+      "company": "Amazon (AWS Neuron)",
+      "location": "United States (multiple locations)",
+      "seniority": "Senior",
+      "source": "https://www.amazon.jobs/en/jobs/3117096/sr-software-engineer-ai-ml-aws-neuron-distributed-training",
+      "cluster_demand": {
+        "SWE": 0.7,
+        "MLE": 0.2,
+        "DS": 0.05,
+        "QD": 0.05,
+        "QR": 0.0
+      }
+    },
+    {
+      "jd_id": "JD_DS_01_Amazon_SeniorDataScientist_DML",
+      "pdf_file": "JD_DS_01_Amazon_SeniorDataScientist_DML.pdf",
+      "role": "DS",
+      "company": "Amazon",
+      "location": "United States (customer-facing / solutions teams)",
+      "seniority": "Senior",
+      "source": "https://www.amazon.jobs/en/jobs/3139664/senior-data-scientist-data-and-machine-learning-wwps-us-federal",
+      "cluster_demand": {
+        "DS": 0.7,
+        "MLE": 0.15,
+        "SWE": 0.1,
+        "QR": 0.05,
+        "QD": 0.0
+      }
+    },
+    {
+      "jd_id": "JD_DS_02_Microsoft_SeniorDataScientist_MediaOptimization",
+      "pdf_file": "JD_DS_02_Microsoft_SeniorDataScientist_MediaOptimization.pdf",
+      "role": "DS",
+      "company": "Microsoft",
+      "location": "United States (varies by team/location)",
+      "seniority": "Senior",
+      "source": "https://careers.microsoft.com/v2/global/en/locations/new-york.html",
+      "cluster_demand": {
+        "DS": 0.65,
+        "SWE": 0.1,
+        "MLE": 0.15,
+        "QR": 0.1,
+        "QD": 0.0
+      }
+    },
+    {
+      "jd_id": "JD_QD_01_TwoSigma_QuantSoftwareEngineer",
+      "pdf_file": "JD_QD_01_TwoSigma_QuantSoftwareEngineer.pdf",
+      "role": "QD",
+      "company": "Two Sigma",
+      "location": "New York, NY (US)",
+      "seniority": "Senior",
+      "source": "https://careers.twosigma.com/careers/JobDetail/New-York-City-United-States-Quantitative-Software-Engineer/13045",
+      "cluster_demand": {
+        "QD": 0.6,
+        "SWE": 0.25,
+        "QR": 0.1,
+        "DS": 0.05,
+        "MLE": 0.0
+      }
+    },
+    {
+      "jd_id": "JD_QD_02_Citadel_QuantDeveloper_Profile",
+      "pdf_file": "JD_QD_02_Citadel_QuantDeveloper_Profile.pdf",
+      "role": "QD",
+      "company": "Citadel",
+      "location": "United States (NY/Chicago/Miami vary by team)",
+      "seniority": "Senior",
+      "source": "https://www.citadel.com/careers/engineering/",
+      "cluster_demand": {
+        "QD": 0.55,
+        "SWE": 0.3,
+        "QR": 0.1,
+        "DS": 0.05,
+        "MLE": 0.0
+      }
+    },
+    {
+      "jd_id": "JD_QR_01_TwoSigma_QuantResearcher_Experienced",
+      "pdf_file": "JD_QR_01_TwoSigma_QuantResearcher_Experienced.pdf",
+      "role": "QR",
+      "company": "Two Sigma",
+      "location": "New York, NY (US)",
+      "seniority": "Senior",
+      "source": "https://careers.twosigma.com/careers/JobDetail/New-York-New-York-United-States-Quantitative-Researcher-Experienced-Hire/12633",
+      "cluster_demand": {
+        "QR": 0.7,
+        "DS": 0.15,
+        "QD": 0.1,
+        "MLE": 0.05,
+        "SWE": 0.0
+      }
+    },
+    {
+      "jd_id": "JD_QR_02_Citadel_QuantResearch_Profile",
+      "pdf_file": "JD_QR_02_Citadel_QuantResearch_Profile.pdf",
+      "role": "QR",
+      "company": "Citadel",
+      "location": "United States (NY/Greenwich/Miami vary by role)",
+      "seniority": "Senior",
+      "source": "https://www.citadel.com/careers/quantitative-research/",
+      "cluster_demand": {
+        "QR": 0.75,
+        "DS": 0.1,
+        "QD": 0.1,
+        "MLE": 0.05,
+        "SWE": 0.0
+      }
+    }
+  ]
+}

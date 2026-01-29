@@ -1,0 +1,9 @@
+ADDITIONAL MATERIAL – PROJECT NOTES
+Candidate: Kevin Liu
+
+Project: Real-Time Personalization System
+
+- Designed a feature store supporting both offline training and online inference.
+- Implemented model versioning and rollback strategy using MLflow.
+- Reduced inference latency from 120ms to 45ms through batching and model optimization.
+- Deployed models on Kubernetes with autoscaling and monitoring dashboards.

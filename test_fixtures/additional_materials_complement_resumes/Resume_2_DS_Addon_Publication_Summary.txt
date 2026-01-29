@@ -1,0 +1,10 @@
+ADDITIONAL MATERIAL – RESEARCH & ANALYSIS SUMMARY
+Candidate: Priya Natarajan
+
+Publication Summary:
+- Developed causal framework to evaluate price elasticity under policy changes.
+- Applied difference-in-differences and synthetic control methods.
+- Findings influenced pricing strategy rollout impacting $12M annual revenue.
+
+Conference:
+- Presented results at Applied Statistics in Industry Conference.

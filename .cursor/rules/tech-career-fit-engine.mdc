@@ -1,0 +1,42 @@
+# Tech Career Fit Engine - Cursor Rules
+
+## Project Structure
+- Keep MVP minimal: ONLY backend/ and frontend/ at repo root.
+- No over-engineering:
+  - No user accounts/auth, no complex DB, no background job systems.
+  - Small readable modules only.
+
+## RAG Architecture
+- RAG must be DIY with FAISS (no hosted vector store).
+- Pipeline: parse → chunk → embed → FAISS.
+- Must use Gemini API via google-genai SDK for:
+  - Embeddings: gemini-embedding-001
+  - Generation: configurable model from env (e.g., GEMINI_MODEL)
+
+## Grounding Rules (CRITICAL)
+- Strict grounding:
+  - Resume bullets must be supported by retrieved resume chunks; otherwise put into Need Info.
+  - Requirements must be supported by curated JD chunks or user-pasted JD text; never invent requirements.
+- If unsure, do not guess.
+- Never fabricate skills, experiences, or qualifications not found in source documents.
+
+## Upload Status
+- Implement upload status tracking:
+  - POST /resume/upload returns upload_id
+  - GET /resume/status reports parsing/chunking/embedding/indexing/ready
+
+## Deterministic Steps
+- Prefer deterministic steps:
+  - Structured JSON intermediate outputs where reasonable.
+  - If unsure, do not guess.
+
+## Authentication
+- Don't add auth/login. Use session_id only.
+- Store session_id in localStorage on frontend.
+- Sessions are in-memory on backend (acceptable for MVP).
+
+## Code Style
+- Keep functions focused and single-purpose.
+- Use Pydantic models for all request/response schemas.
+- Use TypeScript on frontend with proper typing.
+- Avoid over-engineering; solve the current problem, not hypothetical future ones.

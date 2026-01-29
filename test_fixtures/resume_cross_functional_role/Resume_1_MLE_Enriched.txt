@@ -1,0 +1,39 @@
+NAME: Kevin Liu
+LOCATION: Seattle, WA
+
+PRIMARY ROLE TARGET: Machine Learning Engineer (MLE)
+
+GROUND-TRUTH ROLE FIT
+- MLE: 55%
+- SWE: 25%
+- DS: 15%
+- QD: 5%
+- QR: 0%
+
+SUMMARY
+Machine Learning Engineer with 7+ years of experience spanning applied ML, data science,
+and production software engineering. Deep expertise in deploying, scaling, and monitoring
+ML systems in production environments.
+
+CORE SKILLS
+Python, PyTorch, TensorFlow, Feature Engineering, Model Deployment, MLOps,
+Distributed Systems, SQL, Experimentation
+
+EXPERIENCE
+
+Senior Machine Learning Engineer — Tech Platform Co. | 2020–Present
+- Designed and deployed ML models for ranking and personalization serving 10M+ users.
+- Built end-to-end ML pipelines including feature generation, training, and inference.
+- Implemented model monitoring, drift detection, and retraining workflows.
+- Partnered with product and data science teams to translate research into production.
+
+Data Scientist — Tech Platform Co. | 2018–2020
+- Developed predictive models for churn and engagement.
+- Conducted A/B tests and statistical analyses to validate model impact.
+
+Software Engineer — Startup Inc. | 2016–2018
+- Built backend services supporting ML inference APIs.
+- Improved system latency and reliability for data-intensive services.
+
+EDUCATION
+M.S. Computer Science

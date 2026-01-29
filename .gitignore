@@ -205,3 +205,54 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# === Backend ===
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Environment
+.env
+backend/.env
+
+# Data files (runtime generated)
+backend/data/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# === Frontend ===
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Logs ===
+*.log
+npm-debug.log*
+
+# Test fixtures (avoid committing resumes, JDs, materials)
+test_fixtures/*.pdf
+test_fixtures/*.txt
+
+# === Misc ===
+*.bak
+*.tmp
+backend/data/

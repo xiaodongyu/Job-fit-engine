@@ -1,0 +1,112 @@
+# Tests and QA
+
+This folder contains test and QA scripts for the Tech Career Fit Engine backend. All require the **backend** to be running (e.g. `uvicorn main:app --port 8000` from `backend/`) and `GEMINI_API_KEY` set in `backend/.env`.
+
+Fixture layout, sample files, and a comparison of test methods are described in [test_fixtures/README.md](../test_fixtures/README.md). Run commands below from the **project root**.
+
+---
+
+## Scripts and corresponding docs
+
+### 1. `run_qa.py` — Batch QA runner
+
+**What it does:** Runs structured QA phases (1–5) from manifests: resume-only clustering, augmentation, resume–JD match, two-phase match, pass/fail rules. Loads manifests from `test_fixtures/`, calls the backend, computes L1/deltas, and writes **`test_results/qa_report.json`** and **`test_results/qa_report.md`** (default; use `-o DIR` to override).
+
+**Usage:**
+```bash
+python tests/run_qa.py [--base-url URL] [--output-dir DIR] [--phases 1,2,3,4,5]
+```
+
+**Corresponding .md:** [test_fixtures/batch-qa-testing-plan.md](../test_fixtures/batch-qa-testing-plan.md) — fixture layout, phases, implementation notes, deliverables.
+
+---
+
+### 2. `test_resume_only_clustering.py` — Resume-only clustering (CLI)
+
+**What it does:** Uploads a resume, polls until ready, calls `POST /experience/cluster`, and prints cluster assignment and role-fit percentages (MLE/DS/SWE/QR/QD).
+
+**Usage:**
+```bash
+python tests/test_resume_only_clustering.py [--resume PATH] [--base-url URL]
+```
+
+**Defaults:** `--resume test_fixtures/resume.txt`, `--base-url http://localhost:8000`. For benchmark resumes, use e.g. `-r test_fixtures/resume_cross_functional_role/Resume_1_MLE_Enriched.txt`.
+
+**Corresponding .md:** Referenced in [docs/backend-revise-cluster-percentage-derivation-plan.md](../docs/backend-revise-cluster-percentage-derivation-plan.md) and [docs/backend-gt-role-percentage-implementation-plan.md](../docs/backend-gt-role-percentage-implementation-plan.md) for verification. The **cluster + match-by-cluster** flow is also covered by the curl-based [test_fixtures/single-qa-test-plan.md](../test_fixtures/single-qa-test-plan.md) (smoke QA).
+
+---
+
+### 3. `test_run_resume_only_clustering.py` — Pytest wrapper for resume-only clustering
+
+**What it does:** Pytest that subprocess-runs `test_resume_only_clustering.py` and asserts it exits 0 and prints cluster assignment and `%`.
+
+**Usage:**
+```bash
+python -m pytest tests/test_run_resume_only_clustering.py -v
+```
+
+**Corresponding .md:** None. Uses `test_fixtures/resume.txt` as fixture.
+
+---
+
+### 4. `test_single_resume_jd_match.py` — Single resume–JD match (with debug)
+
+**What it does:** Uploads a resume, polls until ready, calls `POST /analyze/match-by-cluster` with `debug=True`, and prints **debug** (prompts, clusters, resume/JD chunks sent to Gemini) plus **results** (`overall_match_pct`, `cluster_matches`).
+
+**Usage:**
+```bash
+python tests/test_single_resume_jd_match.py [--resume PATH] [--jd PATH] [--base-url URL]
+```
+
+**Defaults:** `Resume_1_MLE_Enriched.txt` (under `resume_cross_functional_role/`), `JD_MLE_02_Amazon_GenAIIC.pdf` (under `jd_senior_us_mixed_roles/`). JD can be PDF or TXT.
+
+**Corresponding .md:** [docs/backend_log_20260124_1.md](../docs/backend_log_20260124_1.md) §4 (Single Resume–JD Match Test). The **upload + poll + analyze/fit** flow (without debug) is described in [test_fixtures/test_on_single_resume_jd.md](../test_fixtures/test_on_single_resume_jd.md) (manual curl + `test-offline.sh`).
+
+---
+
+### 5. `test-offline.sh` — Offline flow (upload → poll → analyze/fit)
+
+**What it does:** Uploads resume (PDF or TXT), optionally merged with materials, polls until ready, then calls `POST /analyze/fit` with JD from a file. No cluster or match-by-cluster step.
+
+**Usage:**
+```bash
+./tests/test-offline.sh -r PATH -j PATH [-m MATERIALS_PATH]
+```
+
+**Example:**
+```bash
+./tests/test-offline.sh -r test_fixtures/resume.pdf -j test_fixtures/jd.txt
+./tests/test-offline.sh -r test_fixtures/resume.txt -j test_fixtures/jd.txt -m test_fixtures/materials.txt
+```
+
+**Corresponding .md:** [test_fixtures/test_on_single_resume_jd.md](../test_fixtures/test_on_single_resume_jd.md) — where to put files, manual curl, and use of this script. Also referenced in [test_fixtures/single-qa-test-plan.md](../test_fixtures/single-qa-test-plan.md) “See also” for the upload+poll+analyze subset.
+
+---
+
+## Support
+
+### `qa_helpers.py`
+
+Shared helpers used by `run_qa.py`, `test_resume_only_clustering.py`, and `test_single_resume_jd_match.py`: path resolution (`resolve_resume`, `resolve_jd_pdf`, etc.), JD PDF parsing, API client (upload, poll, cluster, match-by-cluster), cluster distribution, and L1/delta metrics. See docstring and [test_fixtures/batch-qa-testing-plan.md](../test_fixtures/batch-qa-testing-plan.md) for usage.
+
+---
+
+## Outputs
+
+| Script | Output |
+|--------|--------|
+| `run_qa.py` | `test_results/qa_report.json`, `test_results/qa_report.md` (generated by `run_qa.py`; see `_generated_by` in JSON and “Generated by” in MD). |
+| Others | stdout only. |
+
+---
+
+## Quick reference
+
+| Goal | Script | Doc |
+|------|--------|-----|
+| Batch QA (phases 1–5) | `python tests/run_qa.py --phases 1,3` | [batch-qa-testing-plan.md](../test_fixtures/batch-qa-testing-plan.md) |
+| Resume-only clustering | `python tests/test_resume_only_clustering.py -r …` | [single-qa-test-plan.md](../test_fixtures/single-qa-test-plan.md), backend-revise / backend-gt plans |
+| Single resume–JD match + debug | `python tests/test_single_resume_jd_match.py` | [backend_log §4](../docs/backend_log_20260124_1.md) |
+| Upload → analyze/fit (no cluster) | `./tests/test-offline.sh -r … -j …` | [test_on_single_resume_jd.md](../test_fixtures/test_on_single_resume_jd.md) |
+
+For fixture layout and a comparison of **single-qa-test-plan**, **test_on_single_resume_jd**, and **batch-qa-testing-plan**, see [test_fixtures/README.md](../test_fixtures/README.md).
