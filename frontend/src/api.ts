@@ -2,7 +2,7 @@
  * API client for Tech Career Fit Engine backend
  */
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 
 // === Types ===
 export type RoleType = 'DS' | 'MLE' | 'SWE' | 'OTHER';
