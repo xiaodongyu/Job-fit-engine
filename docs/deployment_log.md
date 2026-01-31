@@ -102,3 +102,67 @@ Summary of what was done **after** the "prepare for deployment" commit (backend 
 3. **Wire frontend to backend** — In Vercel → frontend project → Settings → Environment Variables, set **`VITE_API_BASE`** to the Render service URL (no trailing slash). Redeployed the frontend so the production build uses that URL.
 4. **Frontend deployment** — Frontend redeploy on Vercel succeeded.
 5. **Outcome** — The app is now accessible from a **public URL** (Vercel frontend) instead of localhost; production frontend talks to the Render backend. First request after backend sleep (free tier) may take 30–60 seconds to wake the service.
+
+---
+
+## 9. Homework: LLM API documentation and verification
+
+Summary of work for the backend homework (将 API 调用拆分、调用大模型 API、封装 REST API、提交说明文档与截图).
+
+### 9.1 Homework requirements vs implementation
+
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| Separate API calling logic | Met | `backend/gemini_client.py` |
+| Call LLM APIs | Met | Google Gemini (Embedding + Generation) |
+| API Key self-provided | Met | `GEMINI_API_KEY` in `.env` |
+| Backend as REST API | Met | FastAPI with 15+ endpoints |
+| Frontend integration | Met | `frontend/src/api.ts` |
+
+### 9.2 Files created or updated
+
+**New files:**
+
+| File | Purpose |
+|------|---------|
+| `docs/大模型API调用说明.md` | Main API doc: product intro, API list, call scenarios, Mermaid diagram, env config, screenshot instructions |
+| `tests/verify_api_for_screenshots.sh` | Script to run health check, upload resume, `/analyze/fit`, `/resume/generate` for screenshots |
+
+**Updated files:**
+
+| File | Changes |
+|------|---------|
+| `README.md` | Added “大模型 API 调用” section linking to `docs/大模型API调用说明.md` |
+| `docs/大模型API调用说明.md` | Section 7: two ways to capture screenshots (script vs manual) |
+| `docs/verify_api_output.md` | Updated script path to `./tests/verify_api_for_screenshots.sh` |
+| `tests/verify_api_for_screenshots.sh` | Usage comments updated for `tests/` location |
+| `tests/README.md` | Added script as item 6 and Quick reference row |
+
+### 9.3 Documentation structure (`docs/大模型API调用说明.md`)
+
+1. 产品简介
+2. 大模型 API 列表 (Embedding + Generation)
+3. API 封装与拆分 + Mermaid 调用架构图
+4. 调用场景一览 (Embedding & Generation 调用点)
+5. 环境配置 (`GEMINI_API_KEY`, etc.)
+6. REST API 端点一览
+7. 截图与验证建议 (script + manual curl steps)
+8. GitHub 与部署
+
+### 9.4 Verification script flow
+
+`tests/verify_api_for_screenshots.sh` runs in sequence:
+
+1. `GET /health`
+2. `POST /resume/upload/json`
+3. Poll `/resume/status` until `ready`
+4. `POST /analyze/fit`
+5. `POST /resume/generate`
+
+### 9.5 Homework submission checklist
+
+| Deliverable | Status |
+|-------------|--------|
+| 说明文档（调用了哪些大模型 API） | Done: `docs/大模型API调用说明.md` |
+| 截图（API 调用 + REST API 正常） | Pending: run script or manual curl, then screenshot |
+| GitHub Link | Pending: add repo URL to submission |

@@ -83,6 +83,19 @@ python tests/test_single_resume_jd_match.py [--resume PATH] [--jd PATH] [--base-
 
 ---
 
+### 6. `verify_api_for_screenshots.sh` — API verification for homework screenshots
+
+**What it does:** Runs health check, resume upload, `POST /analyze/fit`, and `POST /resume/generate` in sequence, formatting output for screenshots that prove REST API and Gemini API work.
+
+**Usage:**
+```bash
+./tests/verify_api_for_screenshots.sh
+```
+
+**Corresponding .md:** [docs/大模型API调用说明.md](../docs/大模型API调用说明.md) §7 (截图与验证建议).
+
+---
+
 ## Support
 
 ### `qa_helpers.py`
@@ -108,5 +121,6 @@ Shared helpers used by `run_qa.py`, `test_resume_only_clustering.py`, and `test_
 | Resume-only clustering | `python tests/test_resume_only_clustering.py -r …` | [single-qa-test-plan.md](../test_fixtures/single-qa-test-plan.md), backend-revise / backend-gt plans |
 | Single resume–JD match + debug | `python tests/test_single_resume_jd_match.py` | [backend_log §4](../docs/backend_log_20260124_1.md) |
 | Upload → analyze/fit (no cluster) | `./tests/test-offline.sh -r … -j …` | [test_on_single_resume_jd.md](../test_fixtures/test_on_single_resume_jd.md) |
+| API verification for screenshots | `./tests/verify_api_for_screenshots.sh` | [大模型API调用说明.md](../docs/大模型API调用说明.md) §7 |
 
 For fixture layout and a comparison of **single-qa-test-plan**, **test_on_single_resume_jd**, and **batch-qa-testing-plan**, see [test_fixtures/README.md](../test_fixtures/README.md).
