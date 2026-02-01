@@ -26,7 +26,7 @@ export function useCareerFit() {
   // === Session Management ===
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [uploadId, setUploadId] = useState<string | null>(null);
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>('landing');
 
   // === Sticker Board State ===
   const [stickers, setStickers] = useState<Sticker[]>([]);
@@ -474,7 +474,7 @@ export function useCareerFit() {
   };
 
   const handleStartOver = () => {
-    setStep(1);
+    setStep('landing');
     setSessionId(null);
     setUploadId(null);
     setUploadStatus(null);
