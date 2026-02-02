@@ -379,17 +379,34 @@ def generate_resume_internal(request: ResumeGenerateRequest) -> tuple:
     
     content = result.get("content", {})
     if isinstance(content, str):
-        content = {"education": [], "experience": [], "skills": [], "need_info": []}
-    
-    # Extract structured data
-    education = content.get("education", [])
-    experience = content.get("experience", [])
-    skills = content.get("skills", [])
-    need_info = content.get("need_info", [])
-    
+        content = {"experiences": [], "projects": [], "education": [], "skills": [], "need_info": []}
+
+    def normalize_blocks(items: list, kind: str) -> list[dict]:
+        out = []
+        for item in items or []:
+            if isinstance(item, str):
+                out.append({
+                    "block_id": f"{kind}_{uuid.uuid4().hex[:8]}",
+                    "bullets": [item],
+                })
+                continue
+            if isinstance(item, dict):
+                block = dict(item)
+                block.setdefault("block_id", f"{kind}_{uuid.uuid4().hex[:8]}")
+                block.setdefault("bullets", [])
+                out.append(block)
+        return out
+
+    experiences = normalize_blocks(content.get("experiences") or content.get("experience") or [], "exp")
+    projects = normalize_blocks(content.get("projects") or [], "proj")
+    education = normalize_blocks(content.get("education") or [], "edu")
+    skills = content.get("skills", []) or []
+    need_info = content.get("need_info", []) or []
+
     structured = ResumeStructured(
+        experiences=experiences,
+        projects=projects,
         education=education,
-        experience=experience,
         skills=skills
     )
     
@@ -408,17 +425,48 @@ def build_markdown_from_structured(structured: ResumeStructured) -> str:
     lines.append("## Education")
     if structured.education:
         for item in structured.education:
-            lines.append(f"- {item}")
+            header = " | ".join([x for x in [item.school, item.degree, item.field, item.location] if x])
+            date_part = "–".join([x for x in [item.start_date, item.end_date] if x])
+            if date_part:
+                header = f"{header} | {date_part}" if header else date_part
+            if header:
+                lines.append(header)
+            for b in item.bullets or []:
+                lines.append(f"- {b}")
     else:
         lines.append("_No education information available._")
     
     lines.append("")
     lines.append("## Experience")
-    if structured.experience:
-        for item in structured.experience:
-            lines.append(f"- {item}")
+    if structured.experiences:
+        for item in structured.experiences:
+            header = " | ".join([x for x in [item.company, item.location] if x])
+            if header:
+                lines.append(header)
+            title_dates = " | ".join([x for x in [item.title, "–".join([x for x in [item.start_date, item.end_date] if x])] if x])
+            if title_dates:
+                lines.append(title_dates)
+            for b in item.bullets or []:
+                lines.append(f"- {b}")
+            lines.append("")
     else:
         lines.append("_No experience information available._")
+
+    lines.append("")
+    lines.append("## Projects")
+    if structured.projects:
+        for item in structured.projects:
+            header = " | ".join([x for x in [item.name, item.location] if x])
+            if header:
+                lines.append(header)
+            role_dates = " | ".join([x for x in [item.role, "–".join([x for x in [item.start_date, item.end_date] if x])] if x])
+            if role_dates:
+                lines.append(role_dates)
+            for b in item.bullets or []:
+                lines.append(f"- {b}")
+            lines.append("")
+    else:
+        lines.append("_No project information available._")
     
     lines.append("")
     lines.append("## Skills")
@@ -479,19 +527,54 @@ async def resume_export_docx(request: ResumeGenerateRequest):
         doc.add_heading("Education", level=1)
         if structured.education:
             for item in structured.education:
-                p = doc.add_paragraph(style='List Bullet')
-                p.add_run(item)
+                header_parts = [item.school, item.degree, item.field, item.location]
+                header = " | ".join([x for x in header_parts if x])
+                date_part = "–".join([x for x in [item.start_date, item.end_date] if x])
+                if date_part:
+                    header = f"{header} | {date_part}" if header else date_part
+                if header:
+                    doc.add_paragraph(header, style='Normal')
+                for b in item.bullets or []:
+                    p = doc.add_paragraph(style='List Bullet')
+                    p.add_run(b)
         else:
             doc.add_paragraph("No education information available.", style='Normal')
         
         # Experience section
         doc.add_heading("Experience", level=1)
-        if structured.experience:
-            for item in structured.experience:
-                p = doc.add_paragraph(style='List Bullet')
-                p.add_run(item)
+        if structured.experiences:
+            for item in structured.experiences:
+                header_parts = [item.company, item.location]
+                header = " | ".join([x for x in header_parts if x])
+                if header:
+                    doc.add_paragraph(header, style='Normal')
+                title_parts = [item.title, "–".join([x for x in [item.start_date, item.end_date] if x])]
+                title_line = " | ".join([x for x in title_parts if x])
+                if title_line:
+                    doc.add_paragraph(title_line, style='Normal')
+                for b in item.bullets or []:
+                    p = doc.add_paragraph(style='List Bullet')
+                    p.add_run(b)
         else:
             doc.add_paragraph("No experience information available.", style='Normal')
+
+        # Projects section
+        doc.add_heading("Projects", level=1)
+        if structured.projects:
+            for item in structured.projects:
+                header_parts = [item.name, item.location]
+                header = " | ".join([x for x in header_parts if x])
+                if header:
+                    doc.add_paragraph(header, style='Normal')
+                role_parts = [item.role, "–".join([x for x in [item.start_date, item.end_date] if x])]
+                role_line = " | ".join([x for x in role_parts if x])
+                if role_line:
+                    doc.add_paragraph(role_line, style='Normal')
+                for b in item.bullets or []:
+                    p = doc.add_paragraph(style='List Bullet')
+                    p.add_run(b)
+        else:
+            doc.add_paragraph("No project information available.", style='Normal')
         
         # Skills section
         doc.add_heading("Skills", level=1)

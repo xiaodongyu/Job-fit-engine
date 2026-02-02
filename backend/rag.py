@@ -366,6 +366,7 @@ def _coerce_structured(content: dict) -> dict:
             "location": item.get("location"),
             "start_date": item.get("start_date"),
             "end_date": item.get("end_date"),
+            "gpa": item.get("gpa"),
             "bullets": _clean_list(item.get("bullets")),
         }
 
@@ -405,64 +406,176 @@ def _looks_like_experience_header(line: str) -> bool:
 
 
 def _heuristic_structured(text: str) -> dict:
+    """Parse resume text into structured blocks using heuristics.
+    
+    Detects section headers and groups content appropriately.
+    """
+    import re
     raw_lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
     lines = _strip_noise_sections(raw_lines)
-    blocks = []
-    current = None
-    in_education = False
-
+    
+    # Section header patterns
+    SECTION_PATTERNS = {
+        "education": re.compile(r"^(EDUCATION|ACADEMIC|DEGREE)", re.IGNORECASE),
+        "experience": re.compile(r"^(EXPERIENCE|EMPLOYMENT|WORK|CAREER|PROFESSIONAL)", re.IGNORECASE),
+        "projects": re.compile(r"^(PROJECT|PERSONAL PROJECT|ACADEMIC PROJECT)", re.IGNORECASE),
+        "skills": re.compile(r"^(SKILL|TECHNICAL SKILL|COMPETENC)", re.IGNORECASE),
+    }
+    
+    experiences = []
+    projects = []
+    education = []
+    current_section = None  # "education", "experience", "projects", or None
+    current_block = None
+    
+    def _save_current_block():
+        nonlocal current_block
+        if current_block is None:
+            return
+        if current_section == "education":
+            education.append(current_block)
+        elif current_section == "experience":
+            experiences.append(current_block)
+        elif current_section == "projects":
+            projects.append(current_block)
+        current_block = None
+    
+    def _is_section_header(line: str) -> Optional[str]:
+        """Check if line is a section header, return section type or None."""
+        for section, pattern in SECTION_PATTERNS.items():
+            if pattern.match(line):
+                return section
+        return None
+    
+    def _parse_date_from_line(line: str) -> tuple[Optional[str], Optional[str], str]:
+        """Extract dates from a line, return (start, end, remaining_text)."""
+        date_pattern = re.compile(
+            r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s*\d{4}|"
+            r"\d{4}[-/]\d{2}|\d{4})"
+            r"\s*[-–—to]+\s*"
+            r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s*\d{4}|"
+            r"\d{4}[-/]\d{2}|\d{4}|Present|Current)",
+            re.IGNORECASE
+        )
+        match = date_pattern.search(line)
+        if match:
+            start = match.group(1)
+            end = match.group(2)
+            remaining = date_pattern.sub("", line).strip(" ,|-–")
+            return start, end, remaining
+        return None, None, line
+    
     for ln in lines:
-        upper = ln.upper()
-        if upper.startswith("EDUCATION"):
-            if current:
-                blocks.append(current)
-                current = None
-            in_education = True
+        # Check for section headers first
+        section_type = _is_section_header(ln)
+        if section_type:
+            _save_current_block()
+            current_section = section_type
             continue
-
-        if in_education:
-            blocks.append({
-                "block_id": f"edu_{uuid.uuid4().hex[:8]}",
-                "school": None,
-                "degree": ln,
-                "field": None,
-                "location": None,
-                "start_date": None,
-                "end_date": None,
-                "bullets": [],
-            })
+        
+        # Skip if we haven't identified a section yet
+        if current_section is None:
+            # Try to detect based on content
+            if _looks_like_experience_header(ln):
+                current_section = "experience"
+            else:
+                continue
+        
+        # Handle bullet points - add to current block
+        if ln.startswith(("-", "•", "*", "◦", "▪")):
+            bullet_text = ln.lstrip("-•*◦▪ ").strip()
+            if current_block and bullet_text:
+                current_block["bullets"].append(bullet_text)
             continue
-
-        if _looks_like_experience_header(ln):
-            if current:
-                blocks.append(current)
-            current = {
-                "block_id": f"exp_{uuid.uuid4().hex[:8]}",
-                "company": None,
-                "title": None,
-                "location": None,
-                "start_date": None,
-                "end_date": None,
-                "bullets": [],
-                "skills_tags": [],
-                "ownership": None,
-            }
-            current["_header"] = ln
-            continue
-
-        if current and ln.startswith(("-", "•", "*")):
-            current["bullets"].append(ln.lstrip("-•* ").strip())
-        elif current:
-            # continuation of previous bullet
-            if current["bullets"]:
-                current["bullets"][-1] += f" {ln}"
-
-    if current:
-        blocks.append(current)
-
-    experiences = [b for b in blocks if b.get("block_id", "").startswith("exp_")]
-    education = [b for b in blocks if b.get("block_id", "").startswith("edu_")]
-    if not experiences and not education:
+        
+        # Non-bullet line - could be a new block header or continuation
+        start_date, end_date, remaining = _parse_date_from_line(ln)
+        
+        if current_section == "education":
+            # Education: look for school/degree patterns
+            # New education block if we see a school name (contains "University", "College", etc.)
+            # or if dates are present
+            is_new_block = (
+                start_date is not None or
+                re.search(r"(University|College|Institute|School|Academy)", ln, re.IGNORECASE) or
+                re.search(r"(Bachelor|Master|Ph\.?D|B\.?S\.?|M\.?S\.?|M\.?A\.?|B\.?A\.?)", ln, re.IGNORECASE)
+            )
+            if is_new_block:
+                _save_current_block()
+                current_block = {
+                    "block_id": f"edu_{uuid.uuid4().hex[:8]}",
+                    "school": None,
+                    "degree": None,
+                    "field": None,
+                    "location": None,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "gpa": None,
+                    "bullets": [],
+                }
+                # Try to extract school name
+                school_match = re.search(r"([\w\s]+(?:University|College|Institute|School|Academy)[\w\s]*)", ln, re.IGNORECASE)
+                if school_match:
+                    current_block["school"] = school_match.group(1).strip()
+                # Try to extract degree
+                degree_match = re.search(r"(Bachelor|Master|Ph\.?D|B\.?S\.?|M\.?S\.?|M\.?A\.?|B\.?A\.?)[\s\w]*", ln, re.IGNORECASE)
+                if degree_match:
+                    current_block["degree"] = degree_match.group(0).strip()
+            elif current_block:
+                # Continuation - add as bullet or update fields
+                if ln.lower().startswith("gpa"):
+                    gpa_match = re.search(r"(\d+\.?\d*)", ln)
+                    if gpa_match:
+                        current_block["gpa"] = gpa_match.group(1)
+                    else:
+                        current_block["bullets"].append(ln)
+                else:
+                    current_block["bullets"].append(ln)
+                    
+        elif current_section == "experience":
+            # Experience: look for company/title patterns
+            is_new_block = _looks_like_experience_header(ln) or start_date is not None
+            if is_new_block:
+                _save_current_block()
+                current_block = {
+                    "block_id": f"exp_{uuid.uuid4().hex[:8]}",
+                    "company": None,
+                    "title": remaining if remaining else ln,
+                    "location": None,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "bullets": [],
+                    "skills_tags": [],
+                    "ownership": None,
+                }
+            elif current_block:
+                # Continuation - add as bullet
+                current_block["bullets"].append(ln)
+                
+        elif current_section == "projects":
+            # Projects: similar to experience
+            is_new_block = start_date is not None or (not ln.startswith(" ") and len(ln) < 100)
+            if is_new_block and (start_date or not current_block):
+                _save_current_block()
+                current_block = {
+                    "block_id": f"proj_{uuid.uuid4().hex[:8]}",
+                    "name": remaining if remaining else ln,
+                    "role": None,
+                    "location": None,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "bullets": [],
+                    "skills_tags": [],
+                    "ownership": None,
+                }
+            elif current_block:
+                current_block["bullets"].append(ln)
+    
+    # Save final block
+    _save_current_block()
+    
+    # Fallback: if nothing was parsed, treat all bullets as one experience
+    if not experiences and not education and not projects:
         bullets = [ln.lstrip("-•* ").strip() for ln in lines if ln.startswith(("-", "•", "*"))]
         if not bullets:
             bullets = lines[:10]
@@ -477,10 +590,10 @@ def _heuristic_structured(text: str) -> dict:
             "skills_tags": [],
             "ownership": None,
         }]
-
+    
     return {
         "experiences": experiences,
-        "projects": [],
+        "projects": projects,
         "education": education,
     }
 
@@ -488,16 +601,44 @@ def _heuristic_structured(text: str) -> dict:
 def extract_resume_structure(text: str) -> dict:
     """Extract structured experiences/projects/education from resume text."""
     try:
-        prompt = build_resume_structure_prompt(text)
+        cleaned_text = _preprocess_resume_text(text)
+        prompt = build_resume_structure_prompt(cleaned_text)
         result = gemini_client.generate(RESUME_STRUCTURE_SYSTEM, prompt, RESUME_STRUCTURE_SCHEMA)
         content = result.get("content") or {}
         if isinstance(content, str):
             content = {}
         structured = _coerce_structured(content)
         has_blocks = any(structured.get(k) for k in ("experiences", "projects", "education"))
-        return structured if has_blocks else _heuristic_structured(text)
+        return structured if has_blocks else _heuristic_structured(cleaned_text)
     except Exception:
-        return _heuristic_structured(text)
+        return _heuristic_structured(_preprocess_resume_text(text))
+
+
+def _preprocess_resume_text(text: str) -> str:
+    """Normalize tab-separated resume layouts for better parsing.
+
+    Converts patterns like:
+      Company\\tLocation
+      Title\\tDates
+    Into:
+      Company | Location
+      Title | Dates
+    """
+    import re
+
+    lines = text.splitlines()
+    processed: list[str] = []
+
+    for line in lines:
+        # Replace tabs with pipe separator (more explicit for LLM)
+        if "\t" in line:
+            # Normalize multiple tabs/spaces to single pipe
+            line = re.sub(r"\t+\s*", " | ", line)
+        # Clean up excessive whitespace
+        line = re.sub(r"  +", " ", line).strip()
+        processed.append(line)
+
+    return "\n".join(processed)
 
 
 def _format_date_range(start: Optional[str], end: Optional[str]) -> Optional[str]:

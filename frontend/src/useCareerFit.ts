@@ -158,7 +158,8 @@ export function useCareerFit() {
     if (block.type === 'project') {
       return [block.name, block.role, block.location, datePart].filter(Boolean).join(' | ') || 'Project';
     }
-    return [block.school, block.degree, block.field, block.location, datePart].filter(Boolean).join(' | ') || 'Education';
+    const gpaPart = block.gpa ? `GPA: ${block.gpa}` : null;
+    return [block.school, block.degree, block.field, block.location, datePart, gpaPart].filter(Boolean).join(' | ') || 'Education';
   };
 
   const addResumeBlock = (block: Omit<ResumeBlock, 'id' | 'header'>): string => {
@@ -175,7 +176,7 @@ export function useCareerFit() {
   const applyStructuredBlocks = (structured: {
     experiences: Array<{ block_id: string; company?: string | null; title?: string | null; location?: string | null; start_date?: string | null; end_date?: string | null; bullets?: string[] | null; }>;
     projects: Array<{ block_id: string; name?: string | null; role?: string | null; location?: string | null; start_date?: string | null; end_date?: string | null; bullets?: string[] | null; }>;
-    education: Array<{ block_id: string; school?: string | null; degree?: string | null; field?: string | null; location?: string | null; start_date?: string | null; end_date?: string | null; bullets?: string[] | null; }>;
+    education: Array<{ block_id: string; school?: string | null; degree?: string | null; field?: string | null; location?: string | null; start_date?: string | null; end_date?: string | null; gpa?: string | null; bullets?: string[] | null; }>;
   }) => {
     const blocks: ResumeBlock[] = [];
     const parsedStickers: Sticker[] = [];
@@ -241,6 +242,7 @@ export function useCareerFit() {
         location: edu.location || undefined,
         startDate: edu.start_date || undefined,
         endDate: edu.end_date || undefined,
+        gpa: edu.gpa || undefined,
         header: '',
         source: 'parsed'
       };

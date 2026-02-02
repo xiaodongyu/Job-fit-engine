@@ -33,6 +33,7 @@ export interface ResumeBlock {
   location?: string;
   startDate?: string;
   endDate?: string;
+  gpa?: string;
   source?: string;
 }
 

@@ -111,6 +111,7 @@ class ResumeEducationBlock(BaseModel):
     location: Optional[str] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+    gpa: Optional[str] = None
     bullets: list[str] = []
 
 
@@ -179,9 +180,10 @@ class ResumeGenerateRequest(BaseModel):
 
 
 class ResumeStructured(BaseModel):
-    education: list[str]
-    experience: list[str]
-    skills: list[str]
+    experiences: list[ResumeExperienceBlock] = []
+    projects: list[ResumeProjectBlock] = []
+    education: list[ResumeEducationBlock] = []
+    skills: list[str] = []
 
 
 class ResumeGenerateResponse(BaseModel):
