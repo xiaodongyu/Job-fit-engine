@@ -203,3 +203,5 @@ flowchart TB
 
 - **GitHub**：提交作业时提供项目仓库链接
 - **部署**：前端部署于 Vercel，后端部署于 Render，详见 [deployment_log.md](deployment_log.md)
+
+
