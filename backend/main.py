@@ -1,8 +1,15 @@
 """FastAPI application with all endpoints."""
 import json
+import re
+import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs
+import html as html_lib
+
+import requests
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -116,6 +123,127 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def normalize_linkedin_job_url(url: str) -> str:
+    """
+    Extract job_id from a LinkedIn job URL and return
+    https://www.linkedin.com/jobs/view/{job_id}
+    """
+    parsed = urlparse(url)
+
+    # 1️⃣ Case 1: /jobs/view/{job_id}
+    match = re.search(r"/jobs/view/(\d+)", parsed.path)
+    if match:
+        job_id = match.group(1)
+        return f"https://www.linkedin.com/jobs/view/{job_id}"
+
+    # 2️⃣ Case 2: query param like ?currentJobId=123
+    query = parse_qs(parsed.query)
+    if "currentJobId" in query:
+        job_id = query["currentJobId"][0]
+        return f"https://www.linkedin.com/jobs/view/{job_id}"
+
+    raise ValueError("Could not extract job_id from LinkedIn URL")
+
+def normalize_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def extract_linkedin_jd_from_html(page_html: str) -> str:
+    soup = BeautifulSoup(page_html, "html.parser")
+
+    for script in soup.find_all("script", type="application/ld+json"):
+        raw = script.string
+        if not raw:
+            continue
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+
+        candidates = data if isinstance(data, list) else [data]
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                continue
+            if candidate.get("@type") != "JobPosting":
+                continue
+            description = candidate.get("description")
+            if not description:
+                continue
+            description = html_lib.unescape(description)
+            text = BeautifulSoup(description, "html.parser").get_text(" ", strip=True)
+            text = normalize_text(text)
+            if text:
+                return text
+
+    selectors = [
+        "div.show-more-less-html__markup",
+  #      "div.description__text",
+  #      "section.description",
+  #      "div.jobs-description__content",
+  #      "div.jobs-box__html-content",
+  #      "div#job-details",
+  #      "main",
+    ]
+
+    best = ""
+    for selector in selectors:
+        for element in soup.select(selector):
+            text = normalize_text(element.get_text(" ", strip=True))
+            if len(text) > len(best):
+                best = text
+
+    if not best:
+        best = normalize_text(soup.get_text(" ", strip=True))
+
+    return best
+
+
+def fetch_linkedin_jd_text(url: str) -> str:
+    url = normalize_linkedin_job_url(url)
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        raise HTTPException(status_code=400, detail="LinkedIn URL must start with http or https")
+
+    host = parsed.netloc.lower()
+    if "linkedin.com" not in host:
+        raise HTTPException(status_code=400, detail="Only LinkedIn job URLs are supported")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch LinkedIn URL: {exc}")
+
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail=f"LinkedIn request failed with status {response.status_code}"
+        )
+
+    text = extract_linkedin_jd_from_html(response.text)
+    if not text:
+        raise HTTPException(status_code=400, detail="Could not extract job description from LinkedIn page")
+
+    return text[:20000]
+
+
+def wait_for_upload_ready(upload_id: str, timeout_seconds: int = 60, poll_interval: float = 0.25) -> None:
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        status_info = rag.get_upload_status(upload_id)
+        status = status_info.get("status")
+        if status == UploadStatus.READY:
+            return
+        if status == UploadStatus.ERROR:
+            detail = status_info.get("detail", "Job description processing failed")
+            raise HTTPException(status_code=400, detail=detail)
+        time.sleep(poll_interval)
+    raise HTTPException(status_code=504, detail="Timed out processing LinkedIn job description")
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -290,8 +418,14 @@ async def analyze_fit(request: AnalyzeFitRequest):
                 raise HTTPException(status_code=400, detail="No curated JDs found. Ingest JDs first or provide jd_text.")
         elif request.jd_text:
             jd_chunks = rag.search_temp_jd(request.jd_text, query)
+        elif request.jd_url:
+            jd_text = fetch_linkedin_jd_text(request.jd_url)
+            jd_session_id = f"{request.session_id}_jd"
+            upload_id = rag.start_resume_processing(jd_session_id, jd_text)
+            wait_for_upload_ready(upload_id)
+            jd_chunks = rag.search_resume_index(jd_session_id, query, source_label="jd")
         else:
-            raise HTTPException(status_code=400, detail="Either use_curated_jd=true or provide jd_text")
+            raise HTTPException(status_code=400, detail="Either use_curated_jd=true or provide jd_text or jd_url")
         
         # Build prompt and call Gemini
         user_prompt = build_fit_prompt(resume_chunks, jd_chunks, request.target_role)
@@ -469,6 +603,12 @@ def generate_resume_internal(request: ResumeGenerateRequest) -> tuple:
         jd_chunks = rag.search_jd_index(query, role=request.target_role)
     elif request.jd_text:
         jd_chunks = rag.search_temp_jd(request.jd_text, query)
+    elif request.jd_url:
+        jd_text = fetch_linkedin_jd_text(request.jd_url)
+        jd_session_id = f"{request.session_id}_jd"
+        upload_id = rag.start_resume_processing(jd_session_id, jd_text)
+        wait_for_upload_ready(upload_id)
+        jd_chunks = rag.search_resume_index(jd_session_id, query, source_label="jd")
     else:
         jd_chunks = []
     

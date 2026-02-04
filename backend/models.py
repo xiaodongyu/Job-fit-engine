@@ -145,6 +145,7 @@ class AnalyzeFitRequest(BaseModel):
     target_role: RoleType
     use_curated_jd: bool = False
     jd_text: Optional[str] = None
+    jd_url: Optional[str] = None
 
 
 class RoleRecommendation(BaseModel):
@@ -177,6 +178,7 @@ class ResumeGenerateRequest(BaseModel):
     target_role: RoleType
     use_curated_jd: bool = False
     jd_text: Optional[str] = None
+    jd_url: Optional[str] = None
 
 
 class ResumeStructured(BaseModel):

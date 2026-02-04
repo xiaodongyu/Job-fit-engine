@@ -7,12 +7,13 @@
  * - Uses the useCareerFit hook for all state management
  */
 import { useCareerFit } from './useCareerFit';
+import type { CareerFitState } from './useCareerFit';
 import { Landing, StickerBoard, RoleSelector, AnalysisResults, ClusterView } from './steps';
 import { DotScreenShader } from "@/components/ui/dot-shader-background";
 import { useEffect, useRef, useState } from "react";
 
 export default function App() {
-  const state = useCareerFit();
+  const state: CareerFitState = useCareerFit();
 
   const appRef = useRef<HTMLDivElement>(null);
   const [eventSource, setEventSource] = useState<HTMLElement | undefined>(undefined);
@@ -102,6 +103,8 @@ export default function App() {
             setJdSource={state.setJdSource}
             jdText={state.jdText}
             setJdText={state.setJdText}
+            linkedinUrl={state.linkedinUrl}
+            setLinkedinUrl={state.setLinkedinUrl}
             isAnalyzing={state.isAnalyzing}
             error={state.error}
             setStep={state.setStep}

@@ -1374,7 +1374,12 @@ def start_add_materials(session_id: str, new_text: str) -> str:
     return upload_id
 
 
-def search_resume_index(session_id: str, query: str, top_k: int = None) -> list[EvidenceChunk]:
+def search_resume_index(
+    session_id: str,
+    query: str,
+    top_k: int = None,
+    source_label: str = "resume"
+) -> list[EvidenceChunk]:
     """Search session's resume index."""
     if top_k is None:
         top_k = get_top_k()
@@ -1405,7 +1410,7 @@ def search_resume_index(session_id: str, query: str, top_k: int = None) -> list[
         results.append(EvidenceChunk(
             chunk_id=m["chunk_id"],
             text=m["text"],
-            source="resume",
+            source=source_label,
             score=float(score)
         ))
     

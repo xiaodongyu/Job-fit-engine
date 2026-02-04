@@ -224,7 +224,8 @@ export async function analyzeFit(
   sessionId: string,
   targetRole: RoleType,
   useCuratedJd: boolean,
-  jdText?: string
+  jdText?: string,
+  jdUrl?: string
 ): Promise<AnalyzeFitResponse> {
   const res = await fetch(`${API_BASE}/analyze/fit`, {
     method: 'POST',
@@ -233,7 +234,8 @@ export async function analyzeFit(
       session_id: sessionId,
       target_role: targetRole,
       use_curated_jd: useCuratedJd,
-      jd_text: jdText
+      jd_text: jdText,
+      jd_url: jdUrl
     })
   });
   if (!res.ok) throw new Error(await res.text());
@@ -245,7 +247,8 @@ export async function generateResume(
   sessionId: string,
   targetRole: RoleType,
   useCuratedJd: boolean,
-  jdText?: string
+  jdText?: string,
+  jdUrl?: string
 ): Promise<ResumeGenerateResponse> {
   const res = await fetch(`${API_BASE}/resume/generate`, {
     method: 'POST',
@@ -254,7 +257,8 @@ export async function generateResume(
       session_id: sessionId,
       target_role: targetRole,
       use_curated_jd: useCuratedJd,
-      jd_text: jdText
+      jd_text: jdText,
+      jd_url: jdUrl
     })
   });
   if (!res.ok) throw new Error(await res.text());
@@ -266,7 +270,8 @@ export async function exportDocx(
   sessionId: string,
   targetRole: RoleType,
   useCuratedJd: boolean,
-  jdText?: string
+  jdText?: string,
+  jdUrl?: string
 ): Promise<Blob> {
   const res = await fetch(`${API_BASE}/resume/export_docx`, {
     method: 'POST',
@@ -275,7 +280,8 @@ export async function exportDocx(
       session_id: sessionId,
       target_role: targetRole,
       use_curated_jd: useCuratedJd,
-      jd_text: jdText
+      jd_text: jdText,
+      jd_url: jdUrl
     })
   });
   if (!res.ok) throw new Error(await res.text());
