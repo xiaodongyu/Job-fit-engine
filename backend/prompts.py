@@ -6,11 +6,20 @@ ROLE_FIT_SYSTEM = """You are a career advisor analyzing resume-to-role fit.
 CRITICAL GROUNDING RULES:
 1. ONLY use the provided RESUME EVIDENCE chunks. Do NOT fabricate skills or experiences.
 2. ONLY use the provided JD EVIDENCE chunks for requirements. Do NOT invent requirements.
-3. Score must reflect ACTUAL overlap between resume evidence and JD requirements.
-4. Reasons must cite specific evidence from the provided chunks.
-5. If information is unclear or missing, add to ask_user_questions. Do NOT guess.
+3. Reasons must cite specific evidence chunk IDs.
+4. If information is unclear or missing, add to ask_user_questions. Do NOT guess.
 
-Analyze and return structured JSON."""
+SCORING (CRITICAL - must follow exactly):
+- score MUST be a decimal between 0.0 and 1.0 (NOT 0-10, NOT 0-100)
+- score = (number of must_have requirements MET) / (total must_have requirements)
+- Example: if 3 of 4 must-have requirements are met, score = 0.75
+- Be STRICT: if resume lacks clear evidence for a requirement, it is NOT met
+- Score interpretation:
+  - 0.7-1.0 = Strong fit
+  - 0.4-0.7 = Moderate fit (has gaps)
+  - 0.0-0.4 = Weak fit (missing most requirements)
+
+Return structured JSON."""
 
 ROLE_FIT_SCHEMA = {
     "type": "object",
@@ -49,68 +58,129 @@ ROLE_FIT_SCHEMA = {
 }
 
 # === Resume Generation ===
-RESUME_GENERATE_SYSTEM = """You are a professional resume writer creating a tailored resume.
+RESUME_GENERATE_SYSTEM = """You are a professional resume writer.
 
-CRITICAL GROUNDING RULES:
-1. ONLY include content DIRECTLY supported by the provided RESUME EVIDENCE.
-2. Do NOT fabricate, embellish, or infer skills/experiences not in evidence.
-3. If a JD requirement cannot be matched to resume evidence, add it to need_info.
-4. Tailor language to match JD keywords, but NEVER add false claims.
+GROUNDING RULES:
+- ONLY use the provided FACTS / EVIDENCE. Do NOT invent.
+- If required information is missing, put it in need_info.
 
-RESUME WRITING STYLE:
+FORMAT RULES (must follow exactly):
+- EDUCATION section: each entry is two lines:
+  Line 1: School | Location
+  Line 2: Degree/Field | Start–End
+  Then bullets (optional)
+
+- EXPERIENCE section: each role is two lines:
+  Line 1: Company | Location
+  Line 2: Title | Start–End
+  Then bullets
+
+- PROJECTS section: each project is two lines:
+  Line 1: Project Name | Location (or null)
+  Line 2: Role | Start–End
+  Then bullets
+
+- In bullets, highlight key skills by wrapping the skill term in **bold**.
+
+WRITING STYLE:
 - Use strong action verbs (Led, Developed, Implemented, Optimized, Designed, etc.)
 - Write concise, impactful bullets
 - Quantify impact when numbers are present in evidence (e.g., "increased performance by 40%")
 - Tailor wording to target role and JD requirements
 - Keep bullets professional and achievement-focused
 
-OUTPUT STRUCTURE (required sections):
-1. education: List of education entries from evidence
-2. experience: List of experience bullets from evidence  
-3. skills: List of skills mentioned in evidence
-
-Return structured JSON with these exact sections."""
+Return structured JSON matching the schema."""
 
 RESUME_GENERATE_SCHEMA = {
     "type": "object",
     "properties": {
+        "experiences": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "company": {"type": "string", "nullable": True},
+                    "title": {"type": "string", "nullable": True},
+                    "location": {"type": "string", "nullable": True},
+                    "start_date": {"type": "string", "nullable": True},
+                    "end_date": {"type": "string", "nullable": True},
+                    "bullets": {"type": "array", "items": {"type": "string"}}
+                }
+            }
+        },
+        "projects": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "nullable": True},
+                    "role": {"type": "string", "nullable": True},
+                    "location": {"type": "string", "nullable": True},
+                    "start_date": {"type": "string", "nullable": True},
+                    "end_date": {"type": "string", "nullable": True},
+                    "bullets": {"type": "array", "items": {"type": "string"}}
+                }
+            }
+        },
         "education": {
             "type": "array",
-            "items": {"type": "string"},
-            "description": "Education entries from resume evidence"
+            "items": {
+                "type": "object",
+                "properties": {
+                    "school": {"type": "string", "nullable": True},
+                    "degree": {"type": "string", "nullable": True},
+                    "field": {"type": "string", "nullable": True},
+                    "location": {"type": "string", "nullable": True},
+                    "start_date": {"type": "string", "nullable": True},
+                    "end_date": {"type": "string", "nullable": True},
+                    "bullets": {"type": "array", "items": {"type": "string"}}
+                }
+            }
         },
-        "experience": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "Experience bullets with action verbs"
-        },
-        "skills": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "Skills extracted from evidence"
-        },
-        "need_info": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "JD requirements not found in resume evidence"
-        }
+        "skills": {"type": "array", "items": {"type": "string"}},
+        "need_info": {"type": "array", "items": {"type": "string"}}
     },
-    "required": ["education", "experience", "skills", "need_info"]
+    "required": ["experiences", "projects", "education", "skills", "need_info"]
 }
 
 
 # === Resume Structure Extraction (Input Stage) ===
-RESUME_STRUCTURE_SYSTEM = """You are a resume parser that extracts structured sections.
+RESUME_STRUCTURE_SYSTEM = """YYou are a resume parser that extracts structured sections into JSON.
 
-CRITICAL RULES:
-1. Extract ONLY what is present in the provided resume text. Do NOT invent.
-2. Preserve structure: each experience/project/education must be a separate block.
-3. Bullets must remain associated with the correct block.
-4. If a field is unknown, use null. If no bullets are present, use an empty list.
-5. Dates may be partial (YYYY or YYYY-MM). Keep as raw strings.
-6. Ignore role-fit scores, percentages, and meta-analysis sections (e.g., "GROUND-TRUTH ROLE FIT").
+OUTPUT RULES (STRICT):
+- Output ONLY a single JSON object, no markdown, no commentary.
+- Use ONLY keys allowed by the schema. Do not add extra keys.
+- Every item must include ALL required fields; if unknown use null; arrays default to [].
 
-Return JSON matching the schema exactly."""
+SECTION TYPES:
+- EDUCATION: school/university/degree/certifications.
+- EXPERIENCE: jobs, internships, employed roles at a company (including research roles at a company).
+- PROJECTS: personal/academic/research projects not framed as employment at a company.
+
+BLOCK BOUNDARIES (CRITICAL):
+- An EXPERIENCE block starts at the first line that contains a company-like name and location OR a clear employer header.
+- A new EXPERIENCE block starts when you encounter another company header OR another title+date header not belonging to the current block.
+- All bullets belong to the most recent block header until a new block starts.
+- Same company with different titles/dates => separate experience blocks.
+
+FIELD SEPARATORS:
+- Lines may use " | " to separate fields (e.g., "Company | Location" or "Title | Dates").
+- Extract each part into the appropriate field (company/location, title/start_date-end_date, etc.).
+
+FIELD EXTRACTION:
+- company/title/location/start_date/end_date: take from headers; keep dates as raw strings.
+- bullets: copy bullet text verbatim (normalize whitespace; do not rewrite).
+- skills_tags: extract ONLY explicit technologies/skills mentioned in the same block (tools, languages, frameworks, methods). No inference. If none: [].
+- ownership: choose one based ONLY on evidence in the block:
+  - "Individual (end-to-end)" if clearly solo/self-project or explicitly says individual.
+  - "Led / mentored" if led/managed/mentored/owned delivery.
+  - "Collaborated" if worked with/with seniors/with team.
+  - otherwise null.
+
+DO NOT INVENT:
+- Extract only what exists in the resume text. If unclear, use null/[].
+
+Finally: validate the JSON matches the schema before output."""
 
 RESUME_STRUCTURE_SCHEMA = {
     "type": "object",
@@ -120,14 +190,14 @@ RESUME_STRUCTURE_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "company": {"type": ["string", "null"]},
-                    "title": {"type": ["string", "null"]},
-                    "location": {"type": ["string", "null"]},
-                    "start_date": {"type": ["string", "null"]},
-                    "end_date": {"type": ["string", "null"]},
+                    "company": {"type": "string", "nullable": True},
+                    "title": {"type": "string", "nullable": True},
+                    "location": {"type": "string", "nullable": True},
+                    "start_date": {"type": "string", "nullable": True},
+                    "end_date": {"type": "string", "nullable": True},
                     "bullets": {"type": "array", "items": {"type": "string"}},
                     "skills_tags": {"type": "array", "items": {"type": "string"}},
-                    "ownership": {"type": ["string", "null"]}
+                    "ownership": {"type": "string", "nullable": True}
                 },
                 "required": ["company", "title", "location", "start_date", "end_date", "bullets", "skills_tags", "ownership"]
             }
@@ -137,14 +207,14 @@ RESUME_STRUCTURE_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "name": {"type": ["string", "null"]},
-                    "role": {"type": ["string", "null"]},
-                    "location": {"type": ["string", "null"]},
-                    "start_date": {"type": ["string", "null"]},
-                    "end_date": {"type": ["string", "null"]},
+                    "name": {"type": "string", "nullable": True},
+                    "role": {"type": "string", "nullable": True},
+                    "location": {"type": "string", "nullable": True},
+                    "start_date": {"type": "string", "nullable": True},
+                    "end_date": {"type": "string", "nullable": True},
                     "bullets": {"type": "array", "items": {"type": "string"}},
                     "skills_tags": {"type": "array", "items": {"type": "string"}},
-                    "ownership": {"type": ["string", "null"]}
+                    "ownership": {"type": "string", "nullable": True}
                 },
                 "required": ["name", "role", "location", "start_date", "end_date", "bullets", "skills_tags", "ownership"]
             }
@@ -154,15 +224,15 @@ RESUME_STRUCTURE_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "school": {"type": ["string", "null"]},
-                    "degree": {"type": ["string", "null"]},
-                    "field": {"type": ["string", "null"]},
-                    "location": {"type": ["string", "null"]},
-                    "start_date": {"type": ["string", "null"]},
-                    "end_date": {"type": ["string", "null"]},
+                    "school": {"type": "string", "nullable": True},
+                    "degree": {"type": "string", "nullable": True},
+                    "field": {"type": "string", "nullable": True},
+                    "location": {"type": "string", "nullable": True},
+                    "start_date": {"type": "string", "nullable": True},
+                    "end_date": {"type": "string", "nullable": True},
+                    "gpa": {"type": "string", "nullable": True},
                     "bullets": {"type": "array", "items": {"type": "string"}}
-                },
-                "required": ["school", "degree", "field", "location", "start_date", "end_date", "bullets"]
+                }
             }
         }
     },
@@ -170,14 +240,383 @@ RESUME_STRUCTURE_SCHEMA = {
 }
 
 
+# === Two-Pass Resume Parsing ===
+
+# --- Pass 1: Segmentation ---
+RESUME_SEGMENT_SYSTEM = """You are a resume segmenter. Your ONLY job is to split resume text into blocks.
+
+OUTPUT RULES (STRICT):
+- Output ONLY a single JSON object with a "blocks" array.
+- COPY lines VERBATIM. Do NOT paraphrase, rewrite, or summarize.
+- Preserve line order within each block.
+
+SECTION DETECTION:
+Detect section headers like EDUCATION, WORK EXPERIENCE, EXPERIENCE, EMPLOYMENT, PROJECTS, RELEVANT PROJECTS, SKILLS, etc.
+When you see a section header, subsequent blocks belong to that section until a new header appears.
+
+BLOCK BOUNDARIES:
+- Within EDUCATION: each school/university = one block (include degree lines, GPA, coursework, honors as part of that block).
+- Within EXPERIENCE/WORK EXPERIENCE/EMPLOYMENT: each company+role = one block. A block starts at a line with company name (often has location) and includes title+date lines and all bullets until the next company/role header.
+- Within PROJECTS: each project = one block (project name line + role line + bullets).
+- SKILLS section: treat as one block of type "other".
+
+FIELD CLASSIFICATION WITHIN A BLOCK:
+- header_lines: the first 1-2 lines that identify the block (company+location, school, project name).
+- meta_lines: additional header info like title+dates, degree+dates, GPA (not bullets).
+- bullet_lines: lines starting with bullet markers (-, •, *, ◦, ▪) or clearly formatted as achievements.
+- raw_lines: ALL lines in the block verbatim (header + meta + bullets + anything else), preserving order.
+
+CRITICAL:
+- Do NOT merge multiple companies into one block.
+- Do NOT merge multiple schools into one block.
+- Do NOT split one company/school across multiple blocks.
+- Include ALL text in raw_lines, even lines you're unsure about.
+- Use " | " as a visual separator in text if present (from tab normalization).
+
+Return JSON with blocks[]."""
+
+RESUME_SEGMENT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "blocks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "section": {
+                        "type": "string",
+                        "enum": ["experience", "project", "education", "other"]
+                    },
+                    "header_lines": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "meta_lines": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "bullet_lines": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    },
+                    "raw_lines": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                },
+                "required": ["section", "header_lines", "meta_lines", "bullet_lines", "raw_lines"]
+            }
+        }
+    },
+    "required": ["blocks"]
+}
+
+
+def build_resume_segment_prompt(resume_text: str) -> str:
+    """Build user prompt for Pass 1 segmentation."""
+    return f"""=== RESUME TEXT ===
+{resume_text}
+
+=== TASK ===
+Segment this resume into blocks. Each block is one logical unit:
+- One company/role for experiences
+- One school for education
+- One project for projects
+- Skills/other sections as single blocks
+
+RULES:
+1. COPY all lines VERBATIM into raw_lines. Do NOT rewrite.
+2. Classify each block's section: experience, project, education, or other.
+3. Within each block, separate header_lines, meta_lines, and bullet_lines.
+4. Lines with " | " often contain multiple fields (e.g., "Company | Location").
+
+EXAMPLE OUTPUT:
+{{
+  "blocks": [
+    {{
+      "section": "education",
+      "header_lines": ["Example University | New York, USA"],
+      "meta_lines": ["Master of Science, Computer Science | Sept. 2022 – Dec. 2024", "GPA: 3.90; Dean's List"],
+      "bullet_lines": ["Relevant Coursework: Machine Learning, Algorithms, Data Structures."],
+      "raw_lines": [
+        "Example University | New York, USA",
+        "Master of Science, Computer Science | Sept. 2022 – Dec. 2024",
+        "GPA: 3.90; Dean's List",
+        "Relevant Coursework: Machine Learning, Algorithms, Data Structures."
+      ]
+    }},
+    {{
+      "section": "experience",
+      "header_lines": ["TechCorp Inc. | San Francisco, USA"],
+      "meta_lines": ["Software Engineer | Jan. 2023 – Present"],
+      "bullet_lines": [
+        "Developed machine learning pipelines...",
+        "Optimized backend services..."
+      ],
+      "raw_lines": [
+        "TechCorp Inc. | San Francisco, USA",
+        "Software Engineer | Jan. 2023 – Present",
+        "Developed machine learning pipelines...",
+        "Optimized backend services..."
+      ]
+    }}
+  ]
+}}
+
+Return JSON with blocks[]. Do NOT merge multiple companies or schools into one block."""
+
+
+# --- Pass 2: Mapping (blocks → final schema) ---
+RESUME_MAP_SYSTEM = """You are a resume mapper. You convert segmented blocks into structured schema fields.
+
+INPUT: A list of blocks, each with section type, header_lines, meta_lines, bullet_lines, raw_lines.
+
+OUTPUT: The final structured resume with experiences[], projects[], education[] arrays.
+
+MAPPING RULES:
+
+FOR EXPERIENCE BLOCKS (section="experience"):
+- company: extract from header_lines (usually the first part before " | " or on its own line).
+- location: extract from header_lines (usually after " | " or second part).
+- title: extract from meta_lines (job title, usually before " | " on the title/date line).
+- start_date, end_date: extract from meta_lines (date range like "Feb. 2025 – Present").
+- bullets: copy from bullet_lines verbatim.
+- skills_tags: extract ONLY explicit technologies/tools mentioned in bullet_lines (e.g., Python, XGBoost, Java). No inference.
+- ownership: set based on evidence:
+  - "Led / mentored" if led/managed/mentored/coordinated
+  - "Collaborated" if worked with team/seniors
+  - "Individual (end-to-end)" if solo/self-project
+  - null otherwise
+
+FOR EDUCATION BLOCKS (section="education"):
+- school: extract from header_lines (university/college name).
+- location: extract from header_lines (after " | ").
+- degree: extract from meta_lines (e.g., "Master of Arts", "Bachelor of Science").
+- field: extract from meta_lines (e.g., "Statistics", "Computer Science").
+- start_date, end_date: extract from meta_lines.
+- gpa: extract from meta_lines or bullet_lines if present.
+- bullets: include honors, coursework, achievements from bullet_lines/meta_lines.
+
+FOR PROJECT BLOCKS (section="project"):
+- name: extract from header_lines (project name).
+- role: extract from meta_lines (e.g., "Self-Project", "Individual Project").
+- location: extract from header_lines or meta_lines if present.
+- start_date, end_date: extract from meta_lines.
+- bullets: copy from bullet_lines verbatim.
+- skills_tags: extract explicit technologies mentioned.
+- ownership: set based on evidence (Self-Project → "Individual (end-to-end)").
+
+CRITICAL:
+- Do NOT invent fields. If not present in the block, use null.
+- Do NOT split one block into multiple output items.
+- Each input block = exactly one output item.
+- Skip blocks with section="other" (skills sections, etc.)."""
+
+
+def build_resume_map_prompt(blocks_data: dict) -> str:
+    """Build user prompt for Pass 2 mapping."""
+    import json
+    blocks_json = json.dumps(blocks_data, indent=2, ensure_ascii=False)
+    return f"""=== SEGMENTED BLOCKS ===
+{blocks_json}
+
+=== TASK ===
+Map each block to the final schema:
+- experience blocks → experiences[]
+- education blocks → education[]
+- project blocks → projects[]
+- Skip "other" blocks (like skills sections).
+
+FIELD EXTRACTION:
+- Parse " | " separators to split fields (Company | Location, Title | Dates, etc.).
+- Keep dates as raw strings.
+- Copy bullets verbatim.
+- Extract skills_tags only from explicit mentions (Python, Java, XGBoost, etc.).
+
+EXAMPLE (how to map blocks → final schema):
+
+Example input blocks:
+{{
+  "blocks": [
+    {{
+      "section": "experience",
+      "header_lines": ["TechCorp Inc. | San Francisco, USA"],
+      "meta_lines": ["Software Engineer | Jan. 2023 – Present"],
+      "bullet_lines": ["Built backend services in Python.", "Deployed models with XGBoost."],
+      "raw_lines": [
+        "TechCorp Inc. | San Francisco, USA",
+        "Software Engineer | Jan. 2023 – Present",
+        "Built backend services in Python.",
+        "Deployed models with XGBoost."
+      ]
+    }},
+    {{
+      "section": "education",
+      "header_lines": ["Example University | New York, USA"],
+      "meta_lines": ["Master of Science, Computer Science | Sept. 2022 – Dec. 2024", "GPA: 3.90"],
+      "bullet_lines": ["Relevant Coursework: Machine Learning, Algorithms."],
+      "raw_lines": [
+        "Example University | New York, USA",
+        "Master of Science, Computer Science | Sept. 2022 – Dec. 2024",
+        "GPA: 3.90",
+        "Relevant Coursework: Machine Learning, Algorithms."
+      ]
+    }},
+    {{
+      "section": "project",
+      "header_lines": ["Portfolio Optimizer | Remote"],
+      "meta_lines": ["Self-Project | Jan. 2026"],
+      "bullet_lines": ["Implemented mean-variance optimization in Python."],
+      "raw_lines": [
+        "Portfolio Optimizer | Remote",
+        "Self-Project | Jan. 2026",
+        "Implemented mean-variance optimization in Python."
+      ]
+    }}
+  ]
+}}
+
+Example target JSON output:
+{{
+  "experiences": [
+    {{
+      "company": "TechCorp Inc.",
+      "title": "Software Engineer",
+      "location": "San Francisco, USA",
+      "start_date": "Jan. 2023",
+      "end_date": "Present",
+      "bullets": ["Built backend services in Python.", "Deployed models with XGBoost."],
+      "skills_tags": ["Python", "XGBoost"],
+      "ownership": null
+    }}
+  ],
+  "projects": [
+    {{
+      "name": "Portfolio Optimizer",
+      "role": "Self-Project",
+      "location": "Remote",
+      "start_date": "Jan. 2026",
+      "end_date": null,
+      "bullets": ["Implemented mean-variance optimization in Python."],
+      "skills_tags": ["Python"],
+      "ownership": "Individual (end-to-end)"
+    }}
+  ],
+  "education": [
+    {{
+      "school": "Example University",
+      "degree": "Master of Science",
+      "field": "Computer Science",
+      "location": "New York, USA",
+      "start_date": "Sept. 2022",
+      "end_date": "Dec. 2024",
+      "gpa": "3.90",
+      "bullets": ["Relevant Coursework: Machine Learning, Algorithms."]
+    }}
+  ]
+}}
+
+OUTPUT SCHEMA:
+{{
+  "experiences": [
+    {{
+      "company": "...",
+      "title": "...",
+      "location": "...",
+      "start_date": "...",
+      "end_date": "...",
+      "bullets": ["..."],
+      "skills_tags": ["..."],
+      "ownership": ["..."]
+    }}
+  ],
+  "projects": [...],
+  "education": [
+    {{
+      "school": "...",
+      "degree": "...",
+      "field": "...",
+      "location": "...",
+      "start_date": "...",
+      "end_date": "...",
+      "gpa": "...",
+      "bullets": ["..."]
+    }}
+  ]
+}}
+
+Return JSON matching the schema. Each input block = exactly one output item."""
+
+
 def build_resume_structure_prompt(resume_text: str) -> str:
     """Build user prompt for structured resume extraction."""
     return f"""=== RESUME TEXT ===
 {resume_text}
 
-Extract structured blocks for experiences, projects, and education.
-Preserve bullet groupings under the correct block.
-Return JSON matching the schema."""
+=== TASK ===
+Parse the resume into structured blocks: experiences, projects, education.
+
+OUTPUT RULES (STRICT):
+- Output ONLY valid JSON. No markdown. No explanation text.
+- Match the schema exactly: include ALL required keys in every item.
+- If a field is missing/unknown, set it to null. For arrays, use [].
+- Do NOT add extra keys not shown in the example.
+
+CLASSIFICATION GUIDE:
+- Job/internship at a company → experiences[]
+- School/university with degree → education[]
+- Personal/academic projects (not employment) → projects[]
+
+BLOCK BOUNDARIES (CRITICAL):
+- Start a new experience block when you see a new company header (company + location) OR a new title+date line that clearly refers to a different role.
+- Bullets belong to the most recent header until a new header begins.
+- Same company with different title/dates => separate experience blocks.
+
+GROUPING RULES:
+- Each company/job = ONE experience (include all its bullet points)
+- Each school = ONE education (GPA, honors, coursework go into bullets)
+- Each project = ONE project (include all its bullet points)
+
+FIELD RULES:
+- Keep dates as raw strings (e.g., "Sept. 2023", "Feb. 2025").
+- bullets: copy bullet text verbatim (normalize whitespace only).
+- skills_tags: extract ONLY explicit tools/skills mentioned in that block (e.g., Python, Java, XGBoost). No inference. If none: [].
+- ownership: set to one of:
+  - "Individual (end-to-end)" if explicitly solo/self-project/individual
+  - "Led / mentored" if led/managed/mentored/coordinated
+  - "Collaborated" if worked with/with seniors/with team
+  - otherwise null
+
+EXAMPLE OUTPUT STRUCTURE:
+{{
+  "experiences": [
+    {{
+      "company": "Google",
+      "title": "Software Engineer",
+      "location": "Mountain View, CA",
+      "start_date": "Jan 2020",
+      "end_date": "Present",
+      "bullets": ["Led team of 5...", "Improved latency by 40%..."],
+      "skills_tags": ["Python", "TensorFlow"],
+      "ownership": null
+    }}
+  ],
+  "projects": [],
+  "education": [
+    {{
+      "school": "XXX University",
+      "degree": "Master of Science",
+      "field": "Computer Science",
+      "location": "New York",
+      "start_date": "Sept. 2022",
+      "end_date": "Dec. 2024",
+      "gpa": "3.96",
+      "bullets": ["Chair's List 2022", "Relevant Coursework: ML, Data Analysis"]
+    }}
+  ]
+}}
+
+Return JSON matching the schema. Do NOT split one job/school into multiple blocks."""
 
 
 def build_fit_prompt(
@@ -222,25 +661,19 @@ def build_generate_prompt(
     
     return f"""TARGET ROLE: {target_role}
 
-=== RESUME EVIDENCE (use ONLY this for content) ===
+=== FACTS / EVIDENCE (use ONLY this for content) ===
 {resume_text}
 
-=== JD EVIDENCE (align wording to these, do NOT invent facts) ===
+=== JOB DESCRIPTION (tailor wording to these, do NOT invent facts) ===
 {jd_text}
 
-Generate a structured resume with EXACTLY these sections:
+Task:
+- Produce a clean, standard resume following the FORMAT RULES in the system prompt.
+- Each experience/project/education block must have: company/name, title/role, location, dates, bullets.
+- Ensure bullets include **bold** skills where appropriate.
+- If something is missing (dates/company/title), add to need_info.
 
-1. EDUCATION: Extract education entries from resume evidence
-2. EXPERIENCE: Create impactful bullets using action verbs, quantify when data available
-3. SKILLS: List relevant skills from resume evidence
-
-Rules:
-- Content must come from RESUME EVIDENCE only
-- Tailor wording to JD but do NOT add claims not in evidence
-- Use strong action verbs: Led, Developed, Implemented, Designed, Optimized, etc.
-- If JD requires something not in evidence, add to need_info
-
-Return JSON with: education[], experience[], skills[], need_info[]"""
+Return JSON with: experiences[], projects[], education[], skills[], need_info[]."""
 
 
 # === Extraction (1b) ===

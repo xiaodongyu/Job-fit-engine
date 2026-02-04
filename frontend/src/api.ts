@@ -52,6 +52,7 @@ export interface ResumeEducationBlock {
   location?: string | null;
   start_date?: string | null;
   end_date?: string | null;
+  gpa?: string | null;
   bullets: string[];
 }
 
@@ -109,8 +110,9 @@ export interface AnalyzeFitResponse {
 }
 
 export interface ResumeStructured {
-  education: string[];
-  experience: string[];
+  experiences: ResumeExperienceBlock[];
+  projects: ResumeProjectBlock[];
+  education: ResumeEducationBlock[];
   skills: string[];
 }
 
@@ -198,7 +200,7 @@ export async function getResumeStatus(uploadId: string): Promise<ResumeStatusRes
 export async function waitForResumeReady(
   uploadId: string,
   onStatusChange?: (status: ResumeStatusResponse) => void,
-  maxWaitMs: number = 120000,
+  maxWaitMs: number = 300000,
   pollIntervalMs: number = 1000
 ): Promise<ResumeStatusResponse> {
   const start = Date.now();

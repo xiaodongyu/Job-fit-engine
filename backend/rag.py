@@ -27,9 +27,15 @@ from prompts import (
     CLUSTER_SCHEMA,
     build_cluster_prompt,
     CLUSTER_LABELS,
-  RESUME_STRUCTURE_SYSTEM,
-  RESUME_STRUCTURE_SCHEMA,
-  build_resume_structure_prompt,
+    RESUME_STRUCTURE_SYSTEM,
+    RESUME_STRUCTURE_SCHEMA,
+    build_resume_structure_prompt,
+    # Two-pass parsing
+    RESUME_SEGMENT_SYSTEM,
+    RESUME_SEGMENT_SCHEMA,
+    build_resume_segment_prompt,
+    RESUME_MAP_SYSTEM,
+    build_resume_map_prompt,
 )
 
 import gemini_client
@@ -263,6 +269,14 @@ def load_metadata(path: Path) -> list[dict]:
 
 RESUME_RAW_FILENAME = "resume_raw.txt"
 RESUME_STRUCTURED_FILENAME = "resume_structured.json"
+RESUME_BLOCKS_FILENAME = "resume_blocks.json"
+RESUME_SEGMENT_PROMPT_FILENAME = "resume_segment_prompt.txt"
+RESUME_SEGMENT_RAW_FILENAME = "resume_segment_raw.txt"
+RESUME_SEGMENT_PARSED_FILENAME = "resume_segment_parsed.json"
+RESUME_MAP_PROMPT_FILENAME = "resume_map_prompt.txt"
+RESUME_MAP_RAW_FILENAME = "resume_map_raw.txt"
+RESUME_MAP_PARSED_FILENAME = "resume_map_parsed.json"
+RESUME_PARSE_TRACE_FILENAME = "resume_parse_trace.json"
 EXTRACTION_FILENAME = "extraction.json"
 CLUSTERS_FILENAME = "clusters.json"
 
@@ -281,6 +295,29 @@ def _clusters_path(session_id: str) -> Path:
 
 def _resume_structured_path(session_id: str) -> Path:
     return get_session_dir(session_id) / RESUME_STRUCTURED_FILENAME
+
+
+def _resume_blocks_path(session_id: str) -> Path:
+    return get_session_dir(session_id) / RESUME_BLOCKS_FILENAME
+
+
+def _resume_debug_path(session_id: str, filename: str) -> Path:
+    return get_session_dir(session_id) / filename
+
+
+def _save_text_checkpoint(session_id: str, filename: str, text: str) -> None:
+    try:
+        _resume_debug_path(session_id, filename).write_text(text or "", encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _save_json_checkpoint(session_id: str, filename: str, data) -> None:
+    try:
+        with open(_resume_debug_path(session_id, filename), "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 
 def save_resume_raw(session_id: str, text: str) -> None:
@@ -303,6 +340,22 @@ def save_resume_structured(session_id: str, data: dict) -> None:
 
 def load_resume_structured(session_id: str) -> Optional[dict]:
     path = _resume_structured_path(session_id)
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
+def save_resume_blocks(session_id: str, data: dict) -> None:
+    """Save intermediate segmentation blocks for debugging."""
+    path = _resume_blocks_path(session_id)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def load_resume_blocks(session_id: str) -> Optional[dict]:
+    """Load intermediate segmentation blocks."""
+    path = _resume_blocks_path(session_id)
     if path.exists():
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -366,6 +419,7 @@ def _coerce_structured(content: dict) -> dict:
             "location": item.get("location"),
             "start_date": item.get("start_date"),
             "end_date": item.get("end_date"),
+            "gpa": item.get("gpa"),
             "bullets": _clean_list(item.get("bullets")),
         }
 
@@ -405,64 +459,176 @@ def _looks_like_experience_header(line: str) -> bool:
 
 
 def _heuristic_structured(text: str) -> dict:
+    """Parse resume text into structured blocks using heuristics.
+    
+    Detects section headers and groups content appropriately.
+    """
+    import re
     raw_lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
     lines = _strip_noise_sections(raw_lines)
-    blocks = []
-    current = None
-    in_education = False
-
+    
+    # Section header patterns
+    SECTION_PATTERNS = {
+        "education": re.compile(r"^(EDUCATION|ACADEMIC|DEGREE)", re.IGNORECASE),
+        "experience": re.compile(r"^(EXPERIENCE|EMPLOYMENT|WORK|CAREER|PROFESSIONAL)", re.IGNORECASE),
+        "projects": re.compile(r"^(PROJECT|PERSONAL PROJECT|ACADEMIC PROJECT)", re.IGNORECASE),
+        "skills": re.compile(r"^(SKILL|TECHNICAL SKILL|COMPETENC)", re.IGNORECASE),
+    }
+    
+    experiences = []
+    projects = []
+    education = []
+    current_section = None  # "education", "experience", "projects", or None
+    current_block = None
+    
+    def _save_current_block():
+        nonlocal current_block
+        if current_block is None:
+            return
+        if current_section == "education":
+            education.append(current_block)
+        elif current_section == "experience":
+            experiences.append(current_block)
+        elif current_section == "projects":
+            projects.append(current_block)
+        current_block = None
+    
+    def _is_section_header(line: str) -> Optional[str]:
+        """Check if line is a section header, return section type or None."""
+        for section, pattern in SECTION_PATTERNS.items():
+            if pattern.match(line):
+                return section
+        return None
+    
+    def _parse_date_from_line(line: str) -> tuple[Optional[str], Optional[str], str]:
+        """Extract dates from a line, return (start, end, remaining_text)."""
+        date_pattern = re.compile(
+            r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s*\d{4}|"
+            r"\d{4}[-/]\d{2}|\d{4})"
+            r"\s*[-–—to]+\s*"
+            r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s*\d{4}|"
+            r"\d{4}[-/]\d{2}|\d{4}|Present|Current)",
+            re.IGNORECASE
+        )
+        match = date_pattern.search(line)
+        if match:
+            start = match.group(1)
+            end = match.group(2)
+            remaining = date_pattern.sub("", line).strip(" ,|-–")
+            return start, end, remaining
+        return None, None, line
+    
     for ln in lines:
-        upper = ln.upper()
-        if upper.startswith("EDUCATION"):
-            if current:
-                blocks.append(current)
-                current = None
-            in_education = True
+        # Check for section headers first
+        section_type = _is_section_header(ln)
+        if section_type:
+            _save_current_block()
+            current_section = section_type
             continue
-
-        if in_education:
-            blocks.append({
-                "block_id": f"edu_{uuid.uuid4().hex[:8]}",
-                "school": None,
-                "degree": ln,
-                "field": None,
-                "location": None,
-                "start_date": None,
-                "end_date": None,
-                "bullets": [],
-            })
+        
+        # Skip if we haven't identified a section yet
+        if current_section is None:
+            # Try to detect based on content
+            if _looks_like_experience_header(ln):
+                current_section = "experience"
+            else:
+                continue
+        
+        # Handle bullet points - add to current block
+        if ln.startswith(("-", "•", "*", "◦", "▪")):
+            bullet_text = ln.lstrip("-•*◦▪ ").strip()
+            if current_block and bullet_text:
+                current_block["bullets"].append(bullet_text)
             continue
-
-        if _looks_like_experience_header(ln):
-            if current:
-                blocks.append(current)
-            current = {
-                "block_id": f"exp_{uuid.uuid4().hex[:8]}",
-                "company": None,
-                "title": None,
-                "location": None,
-                "start_date": None,
-                "end_date": None,
-                "bullets": [],
-                "skills_tags": [],
-                "ownership": None,
-            }
-            current["_header"] = ln
-            continue
-
-        if current and ln.startswith(("-", "•", "*")):
-            current["bullets"].append(ln.lstrip("-•* ").strip())
-        elif current:
-            # continuation of previous bullet
-            if current["bullets"]:
-                current["bullets"][-1] += f" {ln}"
-
-    if current:
-        blocks.append(current)
-
-    experiences = [b for b in blocks if b.get("block_id", "").startswith("exp_")]
-    education = [b for b in blocks if b.get("block_id", "").startswith("edu_")]
-    if not experiences and not education:
+        
+        # Non-bullet line - could be a new block header or continuation
+        start_date, end_date, remaining = _parse_date_from_line(ln)
+        
+        if current_section == "education":
+            # Education: look for school/degree patterns
+            # New education block if we see a school name (contains "University", "College", etc.)
+            # or if dates are present
+            is_new_block = (
+                start_date is not None or
+                re.search(r"(University|College|Institute|School|Academy)", ln, re.IGNORECASE) or
+                re.search(r"(Bachelor|Master|Ph\.?D|B\.?S\.?|M\.?S\.?|M\.?A\.?|B\.?A\.?)", ln, re.IGNORECASE)
+            )
+            if is_new_block:
+                _save_current_block()
+                current_block = {
+                    "block_id": f"edu_{uuid.uuid4().hex[:8]}",
+                    "school": None,
+                    "degree": None,
+                    "field": None,
+                    "location": None,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "gpa": None,
+                    "bullets": [],
+                }
+                # Try to extract school name
+                school_match = re.search(r"([\w\s]+(?:University|College|Institute|School|Academy)[\w\s]*)", ln, re.IGNORECASE)
+                if school_match:
+                    current_block["school"] = school_match.group(1).strip()
+                # Try to extract degree
+                degree_match = re.search(r"(Bachelor|Master|Ph\.?D|B\.?S\.?|M\.?S\.?|M\.?A\.?|B\.?A\.?)[\s\w]*", ln, re.IGNORECASE)
+                if degree_match:
+                    current_block["degree"] = degree_match.group(0).strip()
+            elif current_block:
+                # Continuation - add as bullet or update fields
+                if ln.lower().startswith("gpa"):
+                    gpa_match = re.search(r"(\d+\.?\d*)", ln)
+                    if gpa_match:
+                        current_block["gpa"] = gpa_match.group(1)
+                    else:
+                        current_block["bullets"].append(ln)
+                else:
+                    current_block["bullets"].append(ln)
+                    
+        elif current_section == "experience":
+            # Experience: look for company/title patterns
+            is_new_block = _looks_like_experience_header(ln) or start_date is not None
+            if is_new_block:
+                _save_current_block()
+                current_block = {
+                    "block_id": f"exp_{uuid.uuid4().hex[:8]}",
+                    "company": None,
+                    "title": remaining if remaining else ln,
+                    "location": None,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "bullets": [],
+                    "skills_tags": [],
+                    "ownership": None,
+                }
+            elif current_block:
+                # Continuation - add as bullet
+                current_block["bullets"].append(ln)
+                
+        elif current_section == "projects":
+            # Projects: similar to experience
+            is_new_block = start_date is not None or (not ln.startswith(" ") and len(ln) < 100)
+            if is_new_block and (start_date or not current_block):
+                _save_current_block()
+                current_block = {
+                    "block_id": f"proj_{uuid.uuid4().hex[:8]}",
+                    "name": remaining if remaining else ln,
+                    "role": None,
+                    "location": None,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "bullets": [],
+                    "skills_tags": [],
+                    "ownership": None,
+                }
+            elif current_block:
+                current_block["bullets"].append(ln)
+    
+    # Save final block
+    _save_current_block()
+    
+    # Fallback: if nothing was parsed, treat all bullets as one experience
+    if not experiences and not education and not projects:
         bullets = [ln.lstrip("-•* ").strip() for ln in lines if ln.startswith(("-", "•", "*"))]
         if not bullets:
             bullets = lines[:10]
@@ -477,27 +643,218 @@ def _heuristic_structured(text: str) -> dict:
             "skills_tags": [],
             "ownership": None,
         }]
-
+    
     return {
         "experiences": experiences,
-        "projects": [],
+        "projects": projects,
         "education": education,
     }
 
 
-def extract_resume_structure(text: str) -> dict:
-    """Extract structured experiences/projects/education from resume text."""
+# === Two-Pass Resume Parsing ===
+
+def segment_resume_blocks(text: str) -> dict:
+    """Pass 1: Segment preprocessed resume text into blocks.
+    
+    Returns: {"blocks": [{"section": ..., "header_lines": [...], ...}]}
+    """
+    prompt = build_resume_segment_prompt(text)
+    result = gemini_client.generate(RESUME_SEGMENT_SYSTEM, prompt, RESUME_SEGMENT_SCHEMA)
+    content = result.get("content") or {}
+    if isinstance(content, str):
+        content = {}
+    
+    blocks = content.get("blocks")
+    if not blocks or not isinstance(blocks, list):
+        return {"blocks": []}
+    
+    # Validate each block has required fields
+    validated = []
+    for b in blocks:
+        if not isinstance(b, dict):
+            continue
+        validated.append({
+            "section": b.get("section", "other"),
+            "header_lines": b.get("header_lines") or [],
+            "meta_lines": b.get("meta_lines") or [],
+            "bullet_lines": b.get("bullet_lines") or [],
+            "raw_lines": b.get("raw_lines") or [],
+        })
+    
+    return {"blocks": validated}
+
+
+def map_blocks_to_structured(blocks_data: dict) -> dict:
+    """Pass 2: Map segmented blocks to final RESUME_STRUCTURE_SCHEMA.
+    
+    Takes output from segment_resume_blocks() and returns structured resume.
+    """
+    blocks = blocks_data.get("blocks", [])
+    if not blocks:
+        return {"experiences": [], "projects": [], "education": []}
+    
+    prompt = build_resume_map_prompt(blocks_data)
+    result = gemini_client.generate(RESUME_MAP_SYSTEM, prompt, RESUME_STRUCTURE_SCHEMA)
+    content = result.get("content") or {}
+    if isinstance(content, str):
+        content = {}
+    
+    return _coerce_structured(content)
+
+
+def extract_resume_structure(text: str, session_id: str = None) -> dict:
+    """Extract structured experiences/projects/education from resume text.
+    
+    Uses two-pass parsing:
+      1. Segment text into blocks (preserving raw lines)
+      2. Map blocks to final schema
+    
+    Falls back to single-pass or heuristic parsing if two-pass fails.
+    
+    Args:
+        text: Raw resume text
+        session_id: Optional session ID for saving intermediate blocks
+    
+    Returns:
+        Structured resume dict with experiences, projects, education arrays.
+    """
+    cleaned_text = _preprocess_resume_text(text)
+
+    trace: dict = {
+        "session_id": session_id,
+        "path_used": None,
+        "two_pass": {
+            "segment": {"ok": False, "error": None, "blocks_count": 0},
+            "map": {"ok": False, "error": None, "experiences": 0, "projects": 0, "education": 0},
+        },
+        "single_pass": {"ok": False, "error": None, "experiences": 0, "projects": 0, "education": 0},
+        "heuristic": {"used": False},
+    }
+
+    # Try two-pass approach
     try:
-        prompt = build_resume_structure_prompt(text)
+        # Pass 1: Segmentation
+        seg_prompt = build_resume_segment_prompt(cleaned_text)
+        if session_id:
+            _save_text_checkpoint(session_id, RESUME_SEGMENT_PROMPT_FILENAME, seg_prompt)
+        seg_result = gemini_client.generate(RESUME_SEGMENT_SYSTEM, seg_prompt, RESUME_SEGMENT_SCHEMA)
+        if session_id:
+            _save_text_checkpoint(session_id, RESUME_SEGMENT_RAW_FILENAME, seg_result.get("raw") or "")
+            _save_json_checkpoint(session_id, RESUME_SEGMENT_PARSED_FILENAME, seg_result.get("content"))
+
+        seg_content = seg_result.get("content") or {}
+        if isinstance(seg_content, str):
+            seg_content = {}
+        blocks = seg_content.get("blocks")
+        if not blocks or not isinstance(blocks, list):
+            blocks_data = {"blocks": []}
+        else:
+            # Validate shape (same logic as segment_resume_blocks)
+            validated = []
+            for b in blocks:
+                if not isinstance(b, dict):
+                    continue
+                validated.append({
+                    "section": b.get("section", "other"),
+                    "header_lines": b.get("header_lines") or [],
+                    "meta_lines": b.get("meta_lines") or [],
+                    "bullet_lines": b.get("bullet_lines") or [],
+                    "raw_lines": b.get("raw_lines") or [],
+                })
+            blocks_data = {"blocks": validated}
+
+        trace["two_pass"]["segment"]["ok"] = True
+        trace["two_pass"]["segment"]["blocks_count"] = len(blocks_data.get("blocks") or [])
+
+        # Save blocks for debugging
+        if session_id:
+            save_resume_blocks(session_id, blocks_data)
+
+        # Pass 2 only if we have blocks
+        if blocks_data.get("blocks"):
+            map_prompt = build_resume_map_prompt(blocks_data)
+            if session_id:
+                _save_text_checkpoint(session_id, RESUME_MAP_PROMPT_FILENAME, map_prompt)
+            map_result = gemini_client.generate(RESUME_MAP_SYSTEM, map_prompt, RESUME_STRUCTURE_SCHEMA)
+            if session_id:
+                _save_text_checkpoint(session_id, RESUME_MAP_RAW_FILENAME, map_result.get("raw") or "")
+                _save_json_checkpoint(session_id, RESUME_MAP_PARSED_FILENAME, map_result.get("content"))
+
+            map_content = map_result.get("content") or {}
+            if isinstance(map_content, str):
+                map_content = {}
+            structured = _coerce_structured(map_content)
+            trace["two_pass"]["map"]["experiences"] = len(structured.get("experiences") or [])
+            trace["two_pass"]["map"]["projects"] = len(structured.get("projects") or [])
+            trace["two_pass"]["map"]["education"] = len(structured.get("education") or [])
+            trace["two_pass"]["map"]["ok"] = True
+
+            has_blocks = any(structured.get(k) for k in ("experiences", "projects", "education"))
+            if has_blocks:
+                trace["path_used"] = "two_pass"
+                if session_id:
+                    _save_json_checkpoint(session_id, RESUME_PARSE_TRACE_FILENAME, trace)
+                return structured
+    except Exception as e:
+        trace["two_pass"]["segment"]["error"] = str(e)
+        trace["two_pass"]["map"]["error"] = str(e)
+        # Fall through to single-pass
+    
+    # Fallback: Single-pass approach (original method)
+    try:
+        prompt = build_resume_structure_prompt(cleaned_text)
         result = gemini_client.generate(RESUME_STRUCTURE_SYSTEM, prompt, RESUME_STRUCTURE_SCHEMA)
         content = result.get("content") or {}
         if isinstance(content, str):
             content = {}
         structured = _coerce_structured(content)
         has_blocks = any(structured.get(k) for k in ("experiences", "projects", "education"))
-        return structured if has_blocks else _heuristic_structured(text)
+        if has_blocks:
+            trace["single_pass"]["ok"] = True
+            trace["single_pass"]["experiences"] = len(structured.get("experiences") or [])
+            trace["single_pass"]["projects"] = len(structured.get("projects") or [])
+            trace["single_pass"]["education"] = len(structured.get("education") or [])
+            trace["path_used"] = "single_pass"
+            if session_id:
+                _save_json_checkpoint(session_id, RESUME_PARSE_TRACE_FILENAME, trace)
+            return structured
     except Exception:
-        return _heuristic_structured(text)
+        trace["single_pass"]["error"] = "single_pass_exception"
+        # Fall through to heuristic
+    
+    # Final fallback: Heuristic parsing
+    trace["heuristic"]["used"] = True
+    trace["path_used"] = "heuristic"
+    if session_id:
+        _save_json_checkpoint(session_id, RESUME_PARSE_TRACE_FILENAME, trace)
+    return _heuristic_structured(cleaned_text)
+
+
+def _preprocess_resume_text(text: str) -> str:
+    """Normalize tab-separated resume layouts for better parsing.
+
+    Converts patterns like:
+      Company\\tLocation
+      Title\\tDates
+    Into:
+      Company | Location
+      Title | Dates
+    """
+    import re
+
+    lines = text.splitlines()
+    processed: list[str] = []
+
+    for line in lines:
+        # Replace tabs with pipe separator (more explicit for LLM)
+        if "\t" in line:
+            # Normalize multiple tabs/spaces to single pipe
+            line = re.sub(r"\t+\s*", " | ", line)
+        # Clean up excessive whitespace
+        line = re.sub(r"  +", " ", line).strip()
+        processed.append(line)
+
+    return "\n".join(processed)
 
 
 def _format_date_range(start: Optional[str], end: Optional[str]) -> Optional[str]:
@@ -833,7 +1190,12 @@ def search_jd_index(query: str, role: str = None, top_k: int = None) -> list[Evi
     meta = load_metadata(JD_META_PATH)
     
     if index is None or not meta:
+        print(f"[DEBUG] search_jd_index: index={index}, meta_len={len(meta) if meta else 0}")
         return []
+    
+    # Debug: print unique roles in metadata
+    unique_roles = set(m.get("role") for m in meta)
+    print(f"[DEBUG] search_jd_index: filter_role={role!r} (type={type(role).__name__}), available_roles={unique_roles}, total_chunks={len(meta)}")
     
     # Embed query
     query_vec = gemini_client.embed_single(query)
@@ -844,12 +1206,18 @@ def search_jd_index(query: str, role: str = None, top_k: int = None) -> list[Evi
     scores, indices = index.search(query_np, k)
     
     results = []
+    skipped_roles = []
+    # Convert enum to string value for comparison
+    role_str = role.value if hasattr(role, 'value') else (str(role) if role else None)
+    print(f"[DEBUG] role_str after conversion: {role_str!r}")
+    
     for score, idx in zip(scores[0], indices[0]):
         if idx < 0 or idx >= len(meta):
             continue
         m = meta[idx]
-        # Filter by role if specified
-        if role and m.get("role") != role:
+        meta_role = m.get("role")
+        if role_str and meta_role != role_str:
+            skipped_roles.append(meta_role)
             continue
         results.append(EvidenceChunk(
             chunk_id=m["chunk_id"],
@@ -860,6 +1228,7 @@ def search_jd_index(query: str, role: str = None, top_k: int = None) -> list[Evi
         if len(results) >= top_k:
             break
     
+    print(f"[DEBUG] search_jd_index: returned {len(results)} chunks, skipped roles: {set(skipped_roles)}")
     return results
 
 
@@ -882,8 +1251,8 @@ def _run_full_pipeline(upload_id: str, session_id: str, text: str) -> None:
     index_path = session_dir / "resume.index"
     meta_path = session_dir / "resume_meta.json"
 
-    update_upload_status(upload_id, UploadStatus.PARSING, "Extracting structured resume blocks...")
-    structured = extract_resume_structure(text)
+    update_upload_status(upload_id, UploadStatus.PARSING, "Extracting structured resume blocks (two-pass)...")
+    structured = extract_resume_structure(text, session_id=session_id)
     save_resume_structured(session_id, structured)
 
     update_upload_status(upload_id, UploadStatus.CHUNKING, "Chunking structured blocks...")
