@@ -3,7 +3,7 @@
  */
 
 // === Step & Mode Types ===
-export type Step = 1 | 2 | 3 | 'cluster';
+export type Step = 'landing' | 1 | 2 | 3 | 'cluster';
 export type JDSource = 'curated' | 'custom';
 export type UploadMode = 'stickers' | 'file';
 export type StickerLabel = 'work' | 'project' | 'internship' | 'skill' | 'metric' | 'education' | 'other';
@@ -38,13 +38,13 @@ export interface ResumeBlock {
 
 // === Constants ===
 export const LABEL_ICONS: Record<StickerLabel, string> = {
-  work: '👔',
-  project: '🛠️',
-  internship: '💼',
-  skill: '⚡',
-  metric: '📊',
-  education: '🎓',
-  other: '📝'
+  work: '■',
+  project: '◆',
+  internship: '▣',
+  skill: '＋',
+  metric: '▦',
+  education: '◧',
+  other: '✎'
 };
 
 export const LABEL_COLORS: Record<StickerLabel, string> = {
@@ -60,13 +60,13 @@ export const LABEL_COLORS: Record<StickerLabel, string> = {
 import type { UploadStatus } from './api';
 
 export const STATUS_LABELS: Record<UploadStatus, string> = {
-  uploading: '📤 Uploading...',
-  parsing: '📄 Parsing document...',
-  chunking: '✂️ Splitting into chunks...',
-  embedding: '🧮 Generating embeddings...',
-  indexing: '📚 Building search index...',
-  ready: '✅ Ready!',
-  error: '❌ Error'
+  uploading: '↑ Uploading…',
+  parsing: '… Parsing document…',
+  chunking: '… Splitting into chunks…',
+  embedding: '… Generating embeddings…',
+  indexing: '… Building search index…',
+  ready: '✓ Ready',
+  error: '× Error'
 };
 
 // === Utility Functions ===
