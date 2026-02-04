@@ -385,7 +385,9 @@ export function useCareerFit() {
         result = { session_id: sessionId, upload_id: uploadId };
       }
 
-      if (hasText && result?.session_id) {
+      // Only add materials if we uploaded a file AND have additional text
+      // (don't double-add if we already uploaded text as the main resume)
+      if (hasText && hasFile && result?.session_id) {
         const addResult = await addResumeMaterialsText(result.session_id, combinedText);
         setUploadId(addResult.upload_id);
         const addStatus = await waitForResumeReady(addResult.upload_id, setUploadStatus);

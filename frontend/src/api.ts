@@ -200,7 +200,7 @@ export async function getResumeStatus(uploadId: string): Promise<ResumeStatusRes
 export async function waitForResumeReady(
   uploadId: string,
   onStatusChange?: (status: ResumeStatusResponse) => void,
-  maxWaitMs: number = 120000,
+  maxWaitMs: number = 300000,
   pollIntervalMs: number = 1000
 ): Promise<ResumeStatusResponse> {
   const start = Date.now();

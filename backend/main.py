@@ -1,5 +1,8 @@
 """FastAPI application with all endpoints."""
+import json
 import uuid
+from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -27,7 +30,83 @@ from prompts import (
 import rag
 import gemini_client
 
-app = FastAPI(title="Tech Career Fit Engine", version="0.2.0")
+
+# === Auto-ingest curated JDs on startup ===
+def _auto_ingest_curated_jds():
+    """Auto-ingest curated JDs from test_fixtures if index doesn't exist."""
+    import fitz  # PyMuPDF
+    
+    # Check if JD index already exists
+    jd_index_path = rag.JD_INDEX_PATH
+    if jd_index_path.exists():
+        print(f"[Startup] JD index already exists at {jd_index_path}")
+        return
+    
+    # Find JD fixtures
+    jd_fixtures_dir = Path(__file__).parent.parent / "test_fixtures" / "jd_senior_us_mixed_roles"
+    index_file = jd_fixtures_dir / "jd_index.json"
+    
+    if not index_file.exists():
+        print(f"[Startup] No JD fixtures found at {index_file}")
+        return
+    
+    print(f"[Startup] Auto-ingesting curated JDs from {jd_fixtures_dir}...")
+    
+    with open(index_file, "r", encoding="utf-8") as f:
+        jd_index = json.load(f)
+    
+    items_to_ingest = []
+    for item in jd_index.get("items", []):
+        pdf_file = item.get("pdf_file")
+        if not pdf_file:
+            continue
+        
+        pdf_path = jd_fixtures_dir / pdf_file
+        if not pdf_path.exists():
+            print(f"[Startup] WARNING: PDF not found: {pdf_path}")
+            continue
+        
+        # Extract text from PDF
+        try:
+            doc = fitz.open(str(pdf_path))
+            text_parts = [page.get_text() for page in doc]
+            doc.close()
+            text = "\n".join(text_parts).strip()
+        except Exception as e:
+            print(f"[Startup] Error reading {pdf_path}: {e}")
+            continue
+        
+        if not text:
+            continue
+        
+        jd_item = {
+            "title": item.get("jd_id", pdf_file),
+            "role": item.get("role", "MLE"),
+            "level": item.get("seniority", "Senior").lower(),
+            "text": text
+        }
+        items_to_ingest.append(jd_item)
+    
+    if items_to_ingest:
+        try:
+            count = rag.ingest_jds(items_to_ingest)
+            print(f"[Startup] SUCCESS: Ingested {count} chunks from {len(items_to_ingest)} JDs")
+        except Exception as e:
+            print(f"[Startup] ERROR during JD ingestion: {e}")
+    else:
+        print("[Startup] No JDs to ingest")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown events."""
+    # Startup: auto-ingest curated JDs
+    _auto_ingest_curated_jds()
+    yield
+    # Shutdown: nothing special needed
+
+
+app = FastAPI(title="Tech Career Fit Engine", version="0.2.0", lifespan=lifespan)
 
 # CORS for frontend
 app.add_middleware(
@@ -218,6 +297,18 @@ async def analyze_fit(request: AnalyzeFitRequest):
         user_prompt = build_fit_prompt(resume_chunks, jd_chunks, request.target_role)
         result = gemini_client.generate(ROLE_FIT_SYSTEM, user_prompt, ROLE_FIT_SCHEMA)
         
+        # Debug: save analyze_fit input/output for debugging
+        session_dir = rag.get_session_dir(request.session_id)
+        try:
+            with open(session_dir / "analyze_fit_prompt.txt", "w", encoding="utf-8") as f:
+                f.write(f"=== SYSTEM ===\n{ROLE_FIT_SYSTEM}\n\n=== USER PROMPT ===\n{user_prompt}")
+            import json as json_mod
+            with open(session_dir / "analyze_fit_response.json", "w", encoding="utf-8") as f:
+                json_mod.dump(result, f, indent=2, ensure_ascii=False, default=str)
+            print(f"[DEBUG] analyze_fit debug saved to {session_dir}")
+        except Exception as debug_err:
+            print(f"[DEBUG] Failed to save analyze_fit debug: {debug_err}")
+        
         content = result.get("content", {})
         if isinstance(content, str):
             content = {}
@@ -225,9 +316,17 @@ async def analyze_fit(request: AnalyzeFitRequest):
         # Build response
         recommended_roles = []
         for r in content.get("recommended_roles", []):
+            raw_score = r.get("score", 0.5)
+            # Normalize score: if LLM returns 0-10 or 0-100 scale, convert to 0-1
+            if raw_score > 1.0:
+                if raw_score <= 10:
+                    raw_score = raw_score / 10.0  # 0-10 scale -> 0-1
+                elif raw_score <= 100:
+                    raw_score = raw_score / 100.0  # 0-100 scale -> 0-1
+            score = min(1.0, max(0.0, raw_score))
             recommended_roles.append(RoleRecommendation(
                 role=r.get("role", request.target_role),
-                score=min(1.0, max(0.0, r.get("score", 0.5))),
+                score=score,
                 reasons=r.get("reasons", [])
             ))
         

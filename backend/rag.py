@@ -1190,7 +1190,12 @@ def search_jd_index(query: str, role: str = None, top_k: int = None) -> list[Evi
     meta = load_metadata(JD_META_PATH)
     
     if index is None or not meta:
+        print(f"[DEBUG] search_jd_index: index={index}, meta_len={len(meta) if meta else 0}")
         return []
+    
+    # Debug: print unique roles in metadata
+    unique_roles = set(m.get("role") for m in meta)
+    print(f"[DEBUG] search_jd_index: filter_role={role!r} (type={type(role).__name__}), available_roles={unique_roles}, total_chunks={len(meta)}")
     
     # Embed query
     query_vec = gemini_client.embed_single(query)
@@ -1201,12 +1206,18 @@ def search_jd_index(query: str, role: str = None, top_k: int = None) -> list[Evi
     scores, indices = index.search(query_np, k)
     
     results = []
+    skipped_roles = []
+    # Convert enum to string value for comparison
+    role_str = role.value if hasattr(role, 'value') else (str(role) if role else None)
+    print(f"[DEBUG] role_str after conversion: {role_str!r}")
+    
     for score, idx in zip(scores[0], indices[0]):
         if idx < 0 or idx >= len(meta):
             continue
         m = meta[idx]
-        # Filter by role if specified
-        if role and m.get("role") != role:
+        meta_role = m.get("role")
+        if role_str and meta_role != role_str:
+            skipped_roles.append(meta_role)
             continue
         results.append(EvidenceChunk(
             chunk_id=m["chunk_id"],
@@ -1217,6 +1228,7 @@ def search_jd_index(query: str, role: str = None, top_k: int = None) -> list[Evi
         if len(results) >= top_k:
             break
     
+    print(f"[DEBUG] search_jd_index: returned {len(results)} chunks, skipped roles: {set(skipped_roles)}")
     return results
 
 
