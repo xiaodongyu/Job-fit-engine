@@ -54,6 +54,10 @@ Open http://localhost:3000 in your browser.
 │   └── package.json
 ```
 
+## 大模型 API 调用
+
+本产品将大模型 API 调用集中封装在 `backend/gemini_client.py`，调用 **Google Gemini** 的 Embedding API 与 Generation API。详细说明（API 列表、调用场景、环境配置、截图建议）见 [docs/大模型API调用说明.md](docs/大模型API调用说明.md)。
+
 ## RAG Pipeline
 
 ```
