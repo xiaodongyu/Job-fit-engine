@@ -95,10 +95,10 @@ export function Landing({ onStart }: { onStart: () => void }) {
         <ContainerScroll
           titleComponent={
             <div className="mx-auto max-w-4xl">
-              <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 md:text-5xl">
+              <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 md:text-5xl dark:text-neutral-100">
                 From notes → a confident resume.
               </h2>
-              <p className="mt-4 text-base text-neutral-700 md:text-lg">
+              <p className="mt-4 text-base text-neutral-700 md:text-lg dark:text-neutral-200">
                 Start free → Sticker board → Target role → Analysis
               </p>
             </div>
