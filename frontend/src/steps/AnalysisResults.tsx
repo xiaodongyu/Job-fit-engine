@@ -77,7 +77,7 @@ export function AnalysisResults({
           <div className="results-section">
             <h3>📋 Requirements (from JD)</h3>
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ color: 'var(--accent-primary)', marginBottom: '0.5rem' }}>Must Have</label>
+              <label style={{ color: 'var(--accent-warning)', marginBottom: '0.5rem' }}>Must Have</label>
               <div className="tag-list">
                 {analysis.requirements.must_have.map((req, i) => (
                   <span key={i} className="tag tag-must">{req}</span>

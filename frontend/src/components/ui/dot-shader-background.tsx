@@ -94,14 +94,14 @@ const DotMaterial = shaderMaterial(
 function Scene() {
   const size = useThree((s) => s.size);
   const viewport = useThree((s) => s.viewport);
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   const rotation = 0.12;
   const gridSize = 90;
 
   const themeColors =
-    theme === "dark"
-      ? { dotColor: "#FFFFFF", bgColor: "#111827", dotOpacity: 0.03 }
+    resolvedTheme === "dark"
+      ? { dotColor: "#FFFFFF", bgColor: "#0b0b0c", dotOpacity: 0.045 }
       : { dotColor: "#111827", bgColor: "#FFFFFF", dotOpacity: 0.075 };
 
   const [trail, onMove] = useTrailTexture({
@@ -122,7 +122,7 @@ function Scene() {
     dotMaterial.uniforms.dotColor.value.setHex(themeColors.dotColor.replace("#", "0x"));
     dotMaterial.uniforms.bgColor.value.setHex(themeColors.bgColor.replace("#", "0x"));
     dotMaterial.uniforms.dotOpacity.value = themeColors.dotOpacity;
-  }, [theme, dotMaterial, themeColors.bgColor, themeColors.dotColor, themeColors.dotOpacity]);
+  }, [resolvedTheme, dotMaterial, themeColors.bgColor, themeColors.dotColor, themeColors.dotOpacity]);
 
   useFrame((state) => {
     dotMaterial.uniforms.time.value = state.clock.elapsedTime;

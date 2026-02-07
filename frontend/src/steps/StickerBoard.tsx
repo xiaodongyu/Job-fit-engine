@@ -158,7 +158,7 @@ export function StickerBoard({
     setBlockInputs(prev => ({ ...prev, [block.id]: '' }));
   };
   return (
-    <div className="card card-wide">
+    <div className="card card-wide" data-tour="sticker-board">
       <h2><span className="icon">📋</span> Sticker Board</h2>
       <p className="card-subtitle">Add your experiences as stickers. Toggle them on/off to include in your resume.</p>
 
@@ -459,6 +459,7 @@ export function StickerBoard({
           className="btn btn-primary"
           onClick={handleResumeSubmit}
           disabled={isUploading || !hasContent()}
+          data-tour="sync-parse"
         >
           {isUploading ? 'Processing...' : 'Sync & Parse →'}
         </button>

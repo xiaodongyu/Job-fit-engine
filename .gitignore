@@ -251,6 +251,7 @@ npm-debug.log*
 # Test fixtures (avoid committing resumes, JDs, materials)
 test_fixtures/*.pdf
 test_fixtures/*.txt
+!test_fixtures/sample_resume.txt
 
 # === Misc ===
 *.bak

@@ -11,6 +11,8 @@ import type { CareerFitState } from './useCareerFit';
 import { Landing, StickerBoard, RoleSelector, AnalysisResults, ClusterView } from './steps';
 import { DotScreenShader } from "@/components/ui/dot-shader-background";
 import { useEffect, useRef, useState } from "react";
+import { TutorialTour, type TourStep } from "./components/TutorialTour";
+import { ThemeToggle } from "./components/ThemeToggle";
 
 export default function App() {
   const state: CareerFitState = useCareerFit();
@@ -21,6 +23,70 @@ export default function App() {
   useEffect(() => {
     setEventSource(appRef.current ?? undefined);
   }, []);
+
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+
+  const tourSteps: TourStep[] = [
+    {
+      id: "steps-bar",
+      selector: '[data-tour="steps-bar"]',
+      title: "3-step workflow",
+      body: "You’ll go from Sticker Board → Target Role → Analysis. The highlight shows where you are in the flow.",
+      placement: "bottom",
+      padding: 10,
+    },
+    {
+      id: "step-1",
+      selector: '[data-tour="step-1"]',
+      title: "Step 1: Sticker Board",
+      body: "Add experiences as quick bullets (or upload a file). Toggle anything you don’t want included.",
+      placement: "bottom",
+      padding: 10,
+    },
+    {
+      id: "board",
+      selector: '[data-tour="sticker-board"]',
+      title: "Build your evidence",
+      body: "Think of stickers as raw material. Short, specific bullets with numbers work best.",
+      placement: "right",
+      padding: 14,
+    },
+    {
+      id: "sync-parse",
+      selector: '[data-tour="sync-parse"]',
+      title: "Sync & parse",
+      body: "This processes your text/file so the next steps can match you against a job description.",
+      placement: "top",
+      padding: 12,
+    },
+    {
+      id: "step-2",
+      selector: '[data-tour="step-2"]',
+      title: "Step 2: Target Role",
+      body: "Paste a job description (or use curated ones) so the app knows what you’re aiming for.",
+      placement: "bottom",
+      padding: 10,
+    },
+    {
+      id: "step-3",
+      selector: '[data-tour="step-3"]',
+      title: "Step 3: Analysis",
+      body: "You’ll see matched vs missing requirements, plus evidence chunks and a resume draft.",
+      placement: "bottom",
+      padding: 10,
+    },
+  ];
+
+  useEffect(() => {
+    if (state.step !== 1) return;
+    const seen = localStorage.getItem("career_fit_tour_seen");
+    if (!seen) {
+      setTourStepIndex(0);
+      setTourOpen(true);
+      localStorage.setItem("career_fit_tour_seen", "1");
+    }
+  }, [state.step]);
 
   return (
     <div ref={appRef} className="relative min-h-screen">
@@ -37,6 +103,9 @@ export default function App() {
         <div className="app-container relative z-10">
           {/* Header */}
           <header className="header">
+            <div style={{ position: "absolute", top: "1rem", right: "1rem" }}>
+              <ThemeToggle />
+            </div>
             <h1>
               Tech Career <span className="brand-script">Fit</span> Engine
             </h1>
@@ -44,16 +113,22 @@ export default function App() {
           </header>
 
           {/* Step Indicator */}
-          <div className="steps">
-            <div className={`step ${state.step === 1 ? 'active' : (state.step === 2 || state.step === 3) ? 'completed' : ''}`}>
+          <div className="steps" data-tour="steps-bar">
+            <div
+              className={`step ${state.step === 1 ? 'active' : (state.step === 2 || state.step === 3) ? 'completed' : ''}`}
+              data-tour="step-1"
+            >
               <span className="step-number">{(state.step === 2 || state.step === 3) ? '✓' : '1'}</span>
               <span>Sticker Board</span>
             </div>
-            <div className={`step ${state.step === 2 ? 'active' : state.step === 3 ? 'completed' : ''}`}>
+            <div
+              className={`step ${state.step === 2 ? 'active' : state.step === 3 ? 'completed' : ''}`}
+              data-tour="step-2"
+            >
               <span className="step-number">{state.step === 3 ? '✓' : '2'}</span>
               <span>Target Role</span>
             </div>
-            <div className={`step ${state.step === 3 ? 'active' : ''}`}>
+            <div className={`step ${state.step === 3 ? 'active' : ''}`} data-tour="step-3">
               <span className="step-number">3</span>
               <span>Analysis</span>
             </div>
@@ -141,6 +216,15 @@ export default function App() {
           </main>
         </div>
       )}
+
+      <TutorialTour
+        open={tourOpen}
+        steps={tourSteps}
+        stepIndex={tourStepIndex}
+        onStepIndexChange={setTourStepIndex}
+        onSkip={() => setTourOpen(false)}
+        onEnd={() => setTourOpen(false)}
+      />
     </div>
   );
 }

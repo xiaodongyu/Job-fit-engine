@@ -1,0 +1,36 @@
+Alex Chen
+San Francisco, CA • alex.chen@example.com • (415) 555-0137 • github.com/alexchen • linkedin.com/in/alexchen
+
+SUMMARY
+Software Engineer with 5+ years building production web services and data pipelines. Strong in TypeScript/React, Python/FastAPI, Postgres, and AWS.
+I like turning ambiguous requirements into measurable launches and maintaining systems with clear SLOs.
+
+CORE SKILLS
+- Languages: TypeScript, JavaScript, Python, SQL
+- Backend: FastAPI, Node.js, REST APIs, background jobs
+- Frontend: React, Vite, state management, accessibility
+- Data: Postgres, Redis, ETL, analytics instrumentation
+- Cloud/Infra: AWS (ECS, Lambda, S3, CloudWatch), Docker, CI/CD
+
+EXPERIENCE
+
+Senior Software Engineer — Acme Marketplace (B2C e‑commerce) | 2022-03 – Present
+- Led migration of checkout service from monolith endpoints to FastAPI microservice; reduced p95 latency from 680ms → 240ms and improved error rate by 32%.
+- Implemented an experimentation framework (feature flags + event logging) used by 6 product teams; enabled A/B testing with consistent metrics and guardrails.
+- Built a resume/JD document ingestion pipeline (PDF/DOCX/TXT parsing + chunking + vector search); decreased manual review time for recruiters by ~40%.
+- Owned on-call rotation; introduced dashboards and alerts, cutting MTTR from 55 minutes to 18 minutes.
+
+Software Engineer — Northwind Analytics | 2019-07 – 2022-02
+- Developed React + TypeScript admin console for internal ops; improved task completion time by 25% through workflow redesign and keyboard navigation.
+- Designed Postgres schemas and ETL jobs for reporting; added incremental loads and data validation checks to reduce bad data incidents.
+- Implemented caching layer with Redis for high-traffic endpoints; reduced read load on Postgres by 45%.
+
+PROJECTS
+
+Job Fit Engine (personal project) | 2024
+- Built a resume/job-description fit analyzer using evidence-grounded retrieval and LLM generation.
+- Implemented strict grounding rules: every claim must cite an evidence chunk from the uploaded resume/JD.
+
+EDUCATION
+B.S. Computer Science — University of California, Davis | 2015 – 2019
+

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { DotScreenShader } from "@/components/ui/dot-shader-background";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Landing({ onStart }: { onStart: () => void }) {
   const pageRef = useRef<HTMLDivElement>(null);
@@ -13,17 +14,22 @@ export function Landing({ onStart }: { onStart: () => void }) {
   }, []);
 
   return (
-    <div ref={pageRef} className="min-h-screen w-full bg-transparent text-neutral-900">
+    <div ref={pageRef} className="min-h-screen w-full bg-transparent text-neutral-900 dark:text-neutral-100">
       {/* Dots background across the whole landing page */}
       <div className="fixed inset-0 z-0">
         <DotScreenShader eventSource={eventSource} />
+      </div>
+
+      {/* Theme toggle pinned to viewport (does not scroll) */}
+      <div className="fixed right-4 top-4 z-30 pointer-events-auto">
+        <ThemeToggle />
       </div>
 
       {/* Hero */}
       <section className="relative z-10 min-h-[92vh] w-full overflow-hidden">
         <div className="mx-auto flex min-h-[92vh] w-full max-w-6xl flex-col justify-center px-6 py-14">
           <div className="max-w-3xl">
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/40 px-3 py-1 text-xs backdrop-blur">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/40 px-3 py-1 text-xs backdrop-blur dark:border-slate-700 dark:bg-slate-900/40">
               <span className="h-2 w-2 rounded-full bg-accent" />
               Evidence-grounded resume fit
             </p>
@@ -37,7 +43,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
               .
             </h1>
 
-            <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-700 md:text-lg">
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-700 md:text-lg dark:text-neutral-200">
               Stop guessing. Get a clear checklist of what you already match, what’s missing, and
               what evidence in your resume supports each claim.
             </p>
@@ -49,7 +55,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
               >
                 Start free
               </button>
-              <div className="text-sm text-neutral-600">Local-only. No sign-up.</div>
+              <div className="text-sm text-neutral-600 dark:text-neutral-300">Local-only. No sign-up.</div>
             </div>
           </div>
         </div>
@@ -58,25 +64,25 @@ export function Landing({ onStart }: { onStart: () => void }) {
       {/* Benefit-led section immediately under the hero */}
       <section className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-14">
         <div className="grid gap-6 md:grid-cols-3">
-          <div className="rounded-xl border border-neutral-200 bg-white/70 p-6 backdrop-blur">
+          <div className="rounded-xl border border-neutral-200 bg-white/70 p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-900/50">
             <div className="text-xs font-semibold tracking-wide text-neutral-500">SAVE TIME</div>
             <div className="mt-2 text-lg font-semibold">Focus on what moves the needle</div>
-            <p className="mt-2 text-sm text-neutral-700">
+            <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-200">
               Turn a long JD into a short, actionable list—so you stop rewriting everything.
             </p>
           </div>
-          <div className="rounded-xl border border-neutral-200 bg-white/70 p-6 backdrop-blur">
+          <div className="rounded-xl border border-neutral-200 bg-white/70 p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-900/50">
             <div className="text-xs font-semibold tracking-wide text-neutral-500">REDUCE RISK</div>
             <div className="mt-2 text-lg font-semibold">No invented “skills”</div>
-            <p className="mt-2 text-sm text-neutral-700">
+            <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-200">
               Generated bullets are grounded in your own text, so you don’t accidentally claim what
               you can’t explain in interviews.
             </p>
           </div>
-          <div className="rounded-xl border border-neutral-200 bg-white/70 p-6 backdrop-blur">
+          <div className="rounded-xl border border-neutral-200 bg-white/70 p-6 backdrop-blur dark:border-slate-700 dark:bg-slate-900/50">
             <div className="text-xs font-semibold tracking-wide text-neutral-500">CLARITY</div>
             <div className="mt-2 text-lg font-semibold">Know what’s missing</div>
-            <p className="mt-2 text-sm text-neutral-700">
+            <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-200">
               Get a “Need Info” checklist so you can fill gaps with real projects, metrics, and
               evidence.
             </p>
