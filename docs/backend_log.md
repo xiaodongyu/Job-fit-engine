@@ -261,3 +261,40 @@ Both files now explicitly state they are produced by `tests/run_qa.py`.
 - **Session 1 log:** [backend_log_20260124_1.md](backend_log_20260124_1.md) (cluster %, QA phases, match-by-cluster, debug, single resume–JD test).
 - **Test methods and fixtures:** [test_fixtures/README.md](../test_fixtures/README.md).
 - **Tests and QA scripts:** [tests/README.md](../tests/README.md).
+
+=======================================
+
+# Backend Log — 2026-02-06
+
+Summary of documentation and i18n work completed today on the **documents_cleanup** branch.
+
+---
+
+## 1. LLM API Usage Manual (English)
+
+- **New file:** `docs/LLM_API_usage_manual.md`
+- **Content:** Full English translation of `docs/大模型API调用说明.md`, covering:
+  - Product overview and LLM API list (Embedding, Generation)
+  - API encapsulation in `backend/gemini_client.py`
+  - Call scenarios (embedding and generation use cases)
+  - Environment configuration (GEMINI_API_KEY, optional model overrides)
+  - REST API endpoints
+  - Screenshot and verification guidance
+  - GitHub and deployment references
+
+---
+
+## 2. README Update
+
+- **File:** `README.md`
+- **Change:** Translated the "大模型 API 调用" section to English ("LLM API Usage").
+- **Link:** Updated the documentation link from `docs/大模型API调用说明.md` to `docs/LLM_API_usage_manual.md`.
+
+---
+
+## 3. Files Touched
+
+| Area | Files |
+|------|-------|
+| New docs | `docs/LLM_API_usage_manual.md` |
+| README | `README.md` |
