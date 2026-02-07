@@ -2,6 +2,8 @@
 
 AI-powered resume analyzer with **strict evidence grounding** using Gemini API + local FAISS RAG.
 
+URL: https://job-fit-engine.vercel.app/
+
 ## Prerequisites
 
 - **Python 3.11+**
