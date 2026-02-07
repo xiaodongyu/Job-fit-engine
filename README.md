@@ -2,7 +2,7 @@
 
 AI-powered resume analyzer with **strict evidence grounding** using Gemini API + local FAISS RAG.
 
-URL: https://job-fit-engine.vercel.app/
+URL (beta): https://job-fit-engine.vercel.app/
 
 ## Prerequisites
 
@@ -56,9 +56,9 @@ Open http://localhost:3000 in your browser.
 │   └── package.json
 ```
 
-## 大模型 API 调用
+## LLM API Usage
 
-本产品将大模型 API 调用集中封装在 `backend/gemini_client.py`，调用 **Google Gemini** 的 Embedding API 与 Generation API。详细说明（API 列表、调用场景、环境配置、截图建议）见 [docs/大模型API调用说明.md](docs/大模型API调用说明.md)。
+The product centralizes LLM API calls in `backend/gemini_client.py`, which invokes **Google Gemini** Embedding and Generation APIs. For details (API list, call scenarios, environment configuration, screenshot guidance), see [docs/LLM_API_usage_manual.md](docs/LLM_API_usage_manual.md).
 
 ## RAG Pipeline
 
